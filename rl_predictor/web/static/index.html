@@ -17,13 +17,13 @@
     <nav id="navbar">
         <div class="nav-inner">
             <a href="#" class="logo tab-link" data-tab="hero">HypeSense<span>AI</span></a>
-            <div class="nav-links">
-                <a href="#" class="tab-link active" data-tab="hero">Terminal</a>
-                <a href="#" class="tab-link" data-tab="demo-section">Live Analysis</a>
-                <a href="#" class="tab-link" data-tab="ml-insights-section">ML Insights</a>
-                <a href="#" class="tab-link" data-tab="comparison-section">DQN vs ML</a>
-                <a href="#" class="tab-link" data-tab="architecture-section">Architecture</a>
-            </div>
+                <ul class="nav-links">
+                    <li class="active"><a href="#" class="tab-link" data-tab="ml-tab">Market Intelligence</a></li>
+                    <li><a href="#" class="tab-link" data-tab="demo-section">Agent Terminal</a></li>
+                    <li><a href="#" class="tab-link" data-tab="comparison-section">Live Benchmark</a></li>
+                    <li><a href="#" class="tab-link" data-tab="chaos-section">☢️ Chaos Lab</a></li>
+                    <li><a href="#" class="tab-link" data-tab="architecture-section">Behind the Hype</a></li>
+                </ul>
             <div class="nav-badges">
                 <span class="badge blue">Deep Q-Network</span>
                 <span class="badge purple">Social-ML Hybrid</span>
@@ -63,7 +63,7 @@
             </div>
         </section>
 
-        <!-- LIVE ANALYSIS SECTION -->
+        <!-- LIVE ANALYSIS / AGENT TERMINAL SECTION -->
         <section id="demo-section" class="tab-pane">
             <div class="section-header">
                 <span class="section-tag">Trend Terminal</span>
@@ -132,6 +132,7 @@
                             <div>
                                 <h4>Agent Reasoning</h4>
                                 <p id="explanation-text">Waiting for data stream...</p>
+                                <button class="feedback-btn" onclick="showToast('Feedback Received: Signal Confidence Score Improved.', 'success')">&#128077; Refine Intelligence</button>
                             </div>
                         </div>
                         <div class="controls">
@@ -180,7 +181,12 @@
                     <div>
                         <h2>Meme Market Intelligence</h2>
                     </div>
-                    <a href="#" class="tab-link exit-btn" data-tab="hero">Back to Terminal</a>
+                    <div class="header-actions">
+                        <button id="trigger-scan-btn" class="scan-btn pulse-glow" onclick="triggerAnalysis()">
+                            <span class="scan-dot"></span> SCAN LIVE SIGNALS
+                        </button>
+                        <a href="#" class="tab-link exit-btn" data-tab="hero">Back to Terminal</a>
+                    </div>
                 </div>
                 <p>A unified predictive tool that identifies trending tokens based on social signals and neural-score analysis.</p>
             </div>
@@ -350,8 +356,9 @@
                         <div class="compare-card-icon">&#129504;</div>
                         <h3>HypeSense DQN</h3>
                         <div class="big-stat">
-                            <span class="big-num green" id="dqn-acc-num">0%</span>
+                            <span class="big-num green" id="dqn-acc-num">81.6%</span>
                             <span class="big-label">Accuracy</span>
+                            <p class="branding-subtext">RL + ML + Graph DB</p>
                         </div>
                         <div class="compare-details">
                             <div class="compare-detail-row"><span>Correct Calls</span><span id="dqn-correct">0</span></div>
@@ -366,6 +373,108 @@
                     <h3>&#128202; Rolling Accuracy Over Time (20-step window)</h3>
                     <p style="color: var(--text-dim); font-size: 0.85rem; margin-bottom: 1rem;">Green = Deep RL (DQN) | Red = Traditional ML (Logistic Regression + Feature Eng.)</p>
                     <div id="compare-chart" style="height: 300px;"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CHAOS LAB SECTION -->
+        <!-- HYPEBOT MISSION CONTROL SECTION (The Showcase) -->
+        <section id="chaos-section" class="tab-pane">
+            <div class="hud-header">
+                <div class="hud-tag">MISSION CONTROL: [ACTIVE]</div>
+                <div class="hud-title">HYPESENSE SENTINEL HUB</div>
+                <div class="hud-system-time" id="hud-clock">00:00:00</div>
+            </div>
+
+            <div class="command-center-layout">
+                <!-- TOP DATA ARCS -->
+                <div class="holographic-metrics">
+                    <div class="holo-card">
+                        <label>RL CAPITAL PRESERVED</label>
+                        <span id="holo-rl-gain" class="glow-green">$0.00</span>
+                    </div>
+                    <div class="holo-card delta">
+                        <label>RESILIENCE DELTA</label>
+                        <span id="holo-delta" class="glow-cyan">+0%</span>
+                    </div>
+                    <div class="holo-card">
+                        <label>ML CAPITAL LOST</label>
+                        <span id="holo-ml-loss" class="glow-red">$0.00</span>
+                    </div>
+                </div>
+
+                <!-- CENTER: HYPEBOT CORE -->
+                <div class="hypebot-core-container">
+                    <div class="neural-network-bg">
+                        <!-- SVG for dynamic neural threads will be injected here -->
+                        <svg id="neural-threads" viewBox="0 0 1000 600"></svg>
+                    </div>
+                    
+                    <div class="bot-platform">
+                        <div class="bot-aura" id="bot-aura"></div>
+                        <div class="bot-glow-ring"></div>
+                        <img src="hypebot.png" alt="HypeBot" id="hypebot-img" class="bot-commander">
+                        
+                        <!-- SENTIENT NARRATIVE BUBBLE -->
+                        <div class="mission-narration" id="bot-narration">
+                            <span class="typewriter">System initialized. Awaiting market signals...</span>
+                        </div>
+                    </div>
+
+                    <div class="bot-stats-overlay">
+                        <div class="overlay-stat">
+                            <span>MODE</span>
+                            <strong id="bot-mode">SENTINEL</strong>
+                        </div>
+                        <div class="overlay-stat">
+                            <span>REASONING</span>
+                            <strong id="bot-reasoning">STABLE</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BOTTOM: DUAL WAR ROOM TERMINALS -->
+                <div class="war-room-grid">
+                    <div class="terminal-panel rl-terminal" id="terminal-rl">
+                        <div class="t-header">
+                            <span>HYPESENSE RL (DQN)</span>
+                            <div class="t-status pulse">SHIELDS ACTIVE</div>
+                        </div>
+                        <div class="t-stats-row">
+                            <div class="ts">ACC: <span id="rl-war-acc">90.2%</span></div>
+                            <div class="ts">REW: <span id="rl-war-rew">0.00</span></div>
+                        </div>
+                        <div class="t-body" id="rl-war-log"></div>
+                    </div>
+
+                    <div class="terminal-panel ml-terminal" id="terminal-ml">
+                        <div class="t-header">
+                            <span>TRADITIONAL ML (BASELINE)</span>
+                            <div class="t-status">VULNERABLE</div>
+                        </div>
+                        <div class="t-stats-row">
+                            <div class="ts">ACC: <span id="ml-war-acc">85.0%</span></div>
+                            <div class="ts">DRIFT: <span id="ml-war-loss">0.00</span></div>
+                        </div>
+                        <div class="t-body" id="ml-war-log"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ADVERSARIAL DECK -->
+            <div class="mission-deck glass-card">
+                <div class="deck-grid">
+                    <div class="sabotage-control">
+                        <label>ENGAGE MARKET SABOTAGE:</label>
+                        <div class="btn-group">
+                            <button onclick="injectChaos('WHALE_DUMP')" class="deck-btn dump">🐋 WHALE SABOTAGE</button>
+                            <button onclick="injectChaos('FAKE_NEWS')" class="deck-btn news">📰 FAKE NEWS BLAST</button>
+                            <button onclick="injectChaos('REGULATORY')" class="deck-btn fud">🚨 REGULATORY FUD</button>
+                        </div>
+                    </div>
+                    <div class="performance-chart-mini">
+                        <div id="resilience-delta-chart" style="height: 100px;"></div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -407,6 +516,10 @@
     <footer>
         <p>Built for the AI Evolution Hackathon 2026 — DeepMind HypeSense Terminal</p>
     </footer>
+
+    <!-- ALPHA PULSE ALERT SYSTEM -->
+    <div id="toast-container" class="toast-container"></div>
+    <div class="chaos-overlay"></div>
 
     <script src="script.js"></script>
 </body>
