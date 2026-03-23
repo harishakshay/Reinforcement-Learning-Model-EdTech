@@ -9,7 +9,10 @@ import numpy as np
 import torch
 from flask import Flask, request, jsonify, send_from_directory
 
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# Add paths for core logic and loaders
+base_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.join(base_dir, "..", "core"))
+sys.path.append(os.path.join(base_dir, "..", "loaders"))
 
 from agent import TrendPredictorAgent
 from environment import TrendEnvironment
@@ -25,8 +28,9 @@ def get_agent():
     global global_agent
     if global_agent is None:
         global_agent = TrendPredictorAgent()
-        if os.path.exists("trend_agent.pth"):
-            global_agent.load("trend_agent.pth")
+        model_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "models", "trend_agent.pth")
+        if os.path.exists(model_path):
+            global_agent.load(model_path)
     return global_agent
 
 def get_env():
@@ -199,6 +203,22 @@ def compare():
         "edge": round(dqn_acc - ml_acc, 1),
         "reward_edge": round(dqn_reward_adj - ml_total_reward, 2)
     })
+
+@app.route('/api/ml-rankings', methods=['GET'])
+def get_ml_rankings():
+    """Fetch the latest Random Forest analysis results for all coins."""
+    import json
+    results_path = os.path.join(base_dir, "..", "..", "meme_engines", "results", "mock_analysis_result.json")
+    
+    if not os.path.exists(results_path):
+        return jsonify({"error": "Analysis results not found. Please run the engines first."}), 404
+        
+    try:
+        with open(results_path, 'r') as f:
+            data = json.load(f)
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     print("\n  HypeSense AI Dashboard running at: http://localhost:5000\n")

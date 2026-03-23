@@ -10,6 +10,7 @@ document.querySelectorAll('.tab-link').forEach(link => {
         document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
         document.getElementById(tabId).classList.add('active');
         if (tabId === 'demo-section') initTerminal();
+        if (tabId === 'ml-insights-section') loadMLRankings();
     });
 });
 
@@ -401,3 +402,63 @@ document.getElementById('run-compare-btn').onclick = async () => {
     btn.disabled = false;
     btn.textContent = 'Run Live Benchmark (500 Steps)';
 };
+
+// ── ML Insights Table ─────────────────────────────────────────────────────────
+async function loadMLRankings() {
+    const tbody = document.getElementById('ml-ranking-body');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem;">Analyzing social sentiment and engagement...</td></tr>';
+    
+    try {
+        const res = await fetch('/api/ml-rankings');
+        const data = await res.json();
+        
+        if (data.error) throw new Error(data.error);
+        
+        tbody.innerHTML = '';
+        const coins = Object.entries(data.coins);
+        
+        // Sort by Viral Score descending
+        coins.sort((a,b) => b[1].meme_viral_score - a[1].meme_viral_score);
+        
+        coins.forEach(([name, info]) => {
+            const tr = document.createElement('tr');
+            const trendClass = (info.trend_label || 'neutral').toLowerCase();
+            const confPct = ((info.confidence || 0) * 100).toFixed(1);
+            
+            // Map the drivers to human names
+            const driver = info.primary_driver 
+                ? info.primary_driver.replace(/_/g, ' ') 
+                : ((info.hype_state_score || 0) > 0.6 ? 'High Hype' : 'Social Sentiment');
+
+            const sentiment = info.sentiment_score !== undefined ? info.sentiment_score : 0;
+            const sentClass = sentiment > 0 ? 'pos' : (sentiment < 0 ? 'neg' : '');
+
+            tr.innerHTML = `
+                <td><span class="coin-name">${name}</span></td>
+                <td><span class="trend-badge ${trendClass}">${(info.trend_label || 'neutral').toUpperCase()}</span></td>
+                <td>
+                    <div class="conf-bar-container">
+                        <div class="conf-bar" style="width: ${confPct}%"></div>
+                        <span class="conf-text">${confPct}%</span>
+                    </div>
+                </td>
+                <td><span class="viral-num">${(info.meme_viral_score || 0).toFixed(1)}</span></td>
+                <td>
+                    <span class="sent-num ${sentClass}">
+                        ${(sentiment > 0 ? '+' : '')}${sentiment.toFixed(2)}
+                    </span>
+                </td>
+                <td class="driver-text">${driver}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+        
+        addLog('System', `Refreshed ML Insights for ${coins.length} coins.`);
+        
+    } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 2rem; color: #ff3e3e;">Failed to load insights: ${e.message}</td></tr>`;
+        addLog('Error', 'ML Insights fetch failed.');
+    }
+}

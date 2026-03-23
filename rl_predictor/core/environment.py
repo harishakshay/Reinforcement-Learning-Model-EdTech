@@ -11,6 +11,14 @@ Follows the standard gym-style interface:
 
 import numpy as np
 from typing import Tuple, Dict
+import os
+import sys
+
+# Add internal paths for cross-module imports
+core_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.join(core_dir, "..", "loaders"))
+sys.path.append(os.path.join(core_dir, "..", "scripts"))
+
 from reward import compute_reward
 
 N_FEATURES = 10
@@ -25,6 +33,8 @@ class TrendEnvironment:
     def __init__(self, n_steps=1000, seed=42, use_twitter=False, twitter_path=None):
         if use_twitter:
             from twitter_loader import TwitterDataLoader
+            if not twitter_path:
+                twitter_path = os.path.join(core_dir, "..", "..", "data", "mock_twitter_200 (1).json")
             self.simulator = TwitterDataLoader(json_path=twitter_path)
             self.max_steps = self.simulator.n_steps
         else:

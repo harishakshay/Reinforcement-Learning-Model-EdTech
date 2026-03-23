@@ -690,3 +690,107 @@ footer {
     color: var(--text-dim);
     font-size: 0.88rem;
 }
+/* ML Ranking Table */
+.ranking-card {
+    padding: 0;
+    overflow: hidden;
+    margin-top: 1rem;
+}
+
+.table-responsive {
+    overflow-x: auto;
+}
+
+.ml-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.95rem;
+}
+
+.ml-table th {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 1.25rem 1rem;
+    color: var(--text-dim);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.ml-table td {
+    padding: 1.25rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    vertical-align: middle;
+}
+
+.ml-table tr:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.coin-name {
+    font-weight: 700;
+    color: var(--text-main);
+    font-size: 1rem;
+}
+
+.trend-badge {
+    padding: 0.25rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 800;
+}
+
+.trend-badge.up { background: rgba(0, 255, 136, 0.1); color: #00ff88; border: 1px solid rgba(0, 255, 136, 0.3); }
+.trend-badge.down { background: rgba(255, 62, 62, 0.1); color: #ff3e3e; border: 1px solid rgba(255, 62, 62, 0.3); }
+.trend-badge.neutral { background: rgba(148, 163, 184, 0.1); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); }
+
+.conf-bar-container {
+    width: 120px;
+    height: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    position: relative;
+    overflow: hidden;
+    margin-top: 5px;
+}
+
+.conf-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #00e5ff, #00ff88);
+    border-radius: 6px;
+}
+
+.conf-text {
+    position: absolute;
+    right: 0;
+    top: -18px;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+}
+
+.viral-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    color: #00e5ff;
+}
+
+.sent-num.pos { color: #00ff88; }
+.sent-num.neg { color: #ff3e3e; }
+
+.driver-text {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    font-style: italic;
+}
+
+.ml-note {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: rgba(0, 229, 255, 0.03);
+    border-left: 4px solid #00e5ff;
+    border-radius: 4px;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+}

@@ -67,9 +67,9 @@ class TwitterDataLoader:
     def __init__(self, json_path: str = None, augment_factor: int = 4, seed: int = 42):
         np.random.seed(seed)
         if json_path is None:
-            # Auto-locate relative to this file
+            # Auto-locate relative to this file (now in data/ directory, two levels up from loaders/)
             base = os.path.dirname(os.path.abspath(__file__))
-            json_path = os.path.join(base, "mock_twitter_200 (1).json")
+            json_path = os.path.join(base, "..", "..", "data", "mock_twitter_200 (1).json")
 
         with open(json_path, "r", encoding="utf-8") as f:
             raw = json.load(f)

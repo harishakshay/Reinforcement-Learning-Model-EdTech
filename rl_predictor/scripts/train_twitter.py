@@ -12,6 +12,14 @@ import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+import os
+import sys
+
+# Add both the web and core directories to the path
+base_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.join(base_dir, "..", "core"))
+sys.path.append(os.path.join(base_dir, "..", "loaders"))
+
 from environment import TrendEnvironment
 from agent import TrendPredictorAgent
 
@@ -76,8 +84,9 @@ def train_on_twitter(n_episodes=80):
                   f"Epsilon: {agent.epsilon:.3f}")
 
     # Save model
-    agent.save("trend_agent.pth")
-    print("\n  Training complete. Agent saved to trend_agent.pth")
+    model_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "models", "trend_agent.pth")
+    agent.save(model_path)
+    print(f"\n  Training complete. Agent saved to {model_path}")
 
     # Plot
     try:
@@ -108,7 +117,7 @@ def train_on_twitter(n_episodes=80):
             ax.yaxis.label.set_color('white')
 
         plt.tight_layout()
-        plt.savefig("training_results.png", dpi=100, facecolor='#0a0a0f')
+        plt.savefig(os.path.join(os.path.dirname(os.path.abspath(__file__)), "training_results.png"), dpi=100, facecolor='#0a0a0f')
         plt.close('all')
         print("  Training plots saved to training_results.png")
     except Exception as e:

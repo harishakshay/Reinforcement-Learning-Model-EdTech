@@ -20,6 +20,7 @@
             <div class="nav-links">
                 <a href="#" class="tab-link active" data-tab="hero">Terminal</a>
                 <a href="#" class="tab-link" data-tab="demo-section">Live Analysis</a>
+                <a href="#" class="tab-link" data-tab="ml-insights-section">ML Insights</a>
                 <a href="#" class="tab-link" data-tab="comparison-section">DQN vs ML</a>
                 <a href="#" class="tab-link" data-tab="architecture-section">Architecture</a>
             </div>
@@ -169,6 +170,40 @@
                         <div id="log-container" class="log-container"></div>
                     </div>
                 </div>
+            </div>
+        </section>
+
+        <!-- ML INSIGHTS SECTION -->
+        <section id="ml-insights-section" class="tab-pane">
+            <div class="section-header">
+                <span class="section-tag">Traditional ML Analysis</span>
+                <h2>Meme Coin Rankings</h2>
+                <p>Top-performing meme coins analyzed by the Random Forest engine. Ranked by Viral Score and Model Confidence.</p>
+            </div>
+
+            <div class="glass-card ranking-card">
+                <div class="table-responsive">
+                    <table class="ml-table" id="ml-ranking-table">
+                        <thead>
+                            <tr>
+                                <th>Coin</th>
+                                <th>Trend</th>
+                                <th>Confidence</th>
+                                <th>Viral Score</th>
+                                <th>Sentiment</th>
+                                <th>Primary Driver</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ml-ranking-body">
+                            <!-- Injected by script.js -->
+                            <tr><td colspan="6" style="text-align:center; padding: 2rem;">Loading ML Insights...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="ml-note">
+                <p><strong>Note:</strong> These insights are generated using a 5-engine consensus (TextCleaning, Sentiment-RoBERTa, Engagement, TrendSpike, and ContextualTopic) fused into a Random Forest classifier.</p>
             </div>
         </section>
 
