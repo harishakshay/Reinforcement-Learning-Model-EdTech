@@ -27,7 +27,7 @@
             "momentum_score": 0.5,
             "anomaly_pct": 55.6,
             "sentiment_score": 0.303,
-            "mentions_per_hour": 5,-
+            "mentions_per_hour": 5,
             "top_keywords": [
                 "meme",
                 "back",
