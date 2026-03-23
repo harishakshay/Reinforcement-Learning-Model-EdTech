@@ -32,7 +32,7 @@ def get_agent():
 def get_env():
     global env
     if env is None:
-        env = TrendEnvironment(n_steps=2000)
+        env = TrendEnvironment(use_twitter=True)
     return env
 
 # ── Static Files ───────────────────────────────────────────────────────────────
@@ -201,5 +201,5 @@ def compare():
     })
 
 if __name__ == '__main__':
-    print("\n  🚀 HypeSense AI Dashboard running at: http://localhost:5000\n")
+    print("\n  HypeSense AI Dashboard running at: http://localhost:5000\n")
     app.run(debug=True, port=5000)

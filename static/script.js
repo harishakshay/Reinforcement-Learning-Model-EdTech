@@ -1,216 +1,403 @@
-// HypeSense AI - Integrated Frontend Logic
+// HypeSense AI — Rebuilt Frontend Logic
 
 // ── Tab Management ─────────────────────────────────────────────────────────────
 document.querySelectorAll('.tab-link').forEach(link => {
     link.addEventListener('click', (e) => {
         e.preventDefault();
         const tabId = link.getAttribute('data-tab');
-        
-        // Update Nav
         document.querySelectorAll('.tab-link').forEach(l => l.classList.remove('active'));
         document.querySelectorAll(`.tab-link[data-tab="${tabId}"]`).forEach(l => l.classList.add('active'));
-        
-        // Update Panes
         document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
         document.getElementById(tabId).classList.add('active');
-        
-        if (tabId === 'demo-section' ) initTerminal();
+        if (tabId === 'demo-section') initTerminal();
     });
 });
+
+// ── Feature Names ──────────────────────────────────────────────────────────────
+const FEATURE_NAMES = [
+    "Sentiment", "Mention Growth", "Engage Score", "Spike Detected",
+    "Metric X", "Metric Y", "Momentum", "Influence", "Hype Index", "Volatility"
+];
 
 // ── State ──────────────────────────────────────────────────────────────────────
 let sessionInitialized = false;
 let trendHistory = [];
+let totalReward = 0;
+let correctCount = 0;
+let stepCount = 0;
+let currentStreak = 0;
+let autoRunInterval = null;
+let chartInitialized = false;
 
-const FEATURE_NAMES = [
-    "Sentiment", "Mention Growth", "Engage Score", "Spike Detected",
-    "Metric X", "Metric Y", "Momentum", "Influence", "Hype", "Volatility"
-];
-
-// ── Terminal / Demo Logic ─────────────────────────────────────────────────────
-const elements = {
-    metricsGrid: document.getElementById('metrics-grid'),
+// ── DOM References ─────────────────────────────────────────────────────────────
+const el = {
+    signalBars: document.getElementById('signal-bars'),
     stateVector: document.getElementById('state-vector'),
-    predictionDisplay: document.getElementById('prediction-display'),
-    predictionText: document.getElementById('prediction-text'),
-    confidenceBadge: document.getElementById('confidence-badge'),
-    explanationText: document.getElementById('explanation-text'),
+    predDisplay: document.getElementById('prediction-display'),
+    predText: document.getElementById('prediction-text'),
+    confBadge: document.getElementById('confidence-badge'),
+    explText: document.getElementById('explanation-text'),
     rewardPulse: document.getElementById('reward-pulse'),
-    rewardList: document.getElementById('reward-list'),
+    rewardBars: document.getElementById('reward-bars'),
     logContainer: document.getElementById('log-container'),
     stepBtn: document.getElementById('step-btn'),
-    stepCount: document.getElementById('step-count')
+    autoBtn: document.getElementById('auto-btn'),
+    resetBtn: document.getElementById('reset-btn'),
+    stepCount: document.getElementById('step-count'),
+    liveIndicator: document.getElementById('live-indicator'),
+    actualLabel: document.getElementById('actual-label'),
+    predictedLabel: document.getElementById('predicted-label'),
+    verdictBadge: document.getElementById('verdict-badge'),
+    statStep: document.getElementById('stat-step'),
+    statAcc: document.getElementById('stat-acc'),
+    statReward: document.getElementById('stat-reward'),
+    statCorrect: document.getElementById('stat-correct'),
+    statStreak: document.getElementById('stat-streak'),
 };
 
+// ── Init Terminal ──────────────────────────────────────────────────────────────
 async function initTerminal() {
     if (sessionInitialized) return;
-    addLog("Connecting to HypeSense Neural Core...");
-    const res = await fetch('/api/init', { method: 'POST' });
-    const data = await res.json();
-    sessionInitialized = true;
-    updateMetrics(data.initial_state);
+    el.liveIndicator.textContent = 'CONNECTING...';
+    el.liveIndicator.className = 'live-dot connecting';
+    try {
+        const res = await fetch('/api/init', { method: 'POST' });
+        const data = await res.json();
+        sessionInitialized = true;
+        renderSignalBars(data.initial_state);
+        el.stateVector.textContent = formatVector(data.initial_state);
+        el.liveIndicator.textContent = 'LIVE';
+        el.liveIndicator.className = 'live-dot live';
+        addLog('System', 'Neural core connected. Ready to analyze.');
+    } catch (e) {
+        el.liveIndicator.textContent = 'ERROR';
+        el.liveIndicator.className = 'live-dot error';
+        addLog('Error', 'Failed to connect to backend.');
+    }
 }
 
-function updateMetrics(state) {
-    elements.metricsGrid.innerHTML = '';
+// ── Signal Bars ────────────────────────────────────────────────────────────────
+function renderSignalBars(state) {
+    el.signalBars.innerHTML = '';
     state.forEach((val, i) => {
-        const div = document.createElement('div');
-        div.className = 'metric-item';
-        div.innerHTML = `
-            <span class="metric-label">${FEATURE_NAMES[i] || 'Signal '+i}</span>
-            <span class="metric-val">${val.toFixed(3)}</span>
+        const pct = Math.min(Math.max((val + 1) / 2, 0), 1); // normalize -1..1 to 0..1
+        const color = pct > 0.65 ? '#00ff88' : pct > 0.35 ? '#00e5ff' : '#ff3e3e';
+        const bar = document.createElement('div');
+        bar.className = 'signal-row';
+        bar.innerHTML = `
+            <span class="sig-name">${FEATURE_NAMES[i]}</span>
+            <div class="sig-track">
+                <div class="sig-fill" style="width:${(pct * 100).toFixed(1)}%; background:${color};"></div>
+            </div>
+            <span class="sig-val" style="color:${color}">${val.toFixed(3)}</span>
         `;
-        elements.metricsGrid.appendChild(div);
+        el.signalBars.appendChild(bar);
     });
-    elements.stateVector.textContent = `[ ${state.map(v => v.toFixed(2)).join(', ')} ]`;
+    el.stateVector.textContent = formatVector(state);
 }
 
+function formatVector(state) {
+    return '[' + state.map(v => v.toFixed(2)).join(', ') + ']';
+}
+
+// ── Step Logic ─────────────────────────────────────────────────────────────────
 async function takeStep() {
-    elements.stepBtn.classList.add('loading');
+    if (!sessionInitialized) await initTerminal();
+    el.stepBtn.disabled = true;
+    el.liveIndicator.textContent = 'ANALYZING';
+    el.liveIndicator.className = 'live-dot connecting';
+
     try {
         const res = await fetch('/api/step', { method: 'POST' });
         const data = await res.json();
 
-        // Update UI
-        updatePredictionUI(data.prediction_label, data.confidence);
-        updateMetrics(data.state);
-        elements.explanationText.textContent = data.explanation;
-        elements.stepCount.textContent = `STEP ${data.next_step}`;
-        
+        stepCount++;
+        const isCorrect = data.prediction === data.actual_trend;
+        if (isCorrect) {
+            correctCount++;
+            currentStreak++;
+        } else {
+            currentStreak = 0;
+        }
+        totalReward += data.reward;
+
+        // Update signal bars
+        renderSignalBars(data.state);
+
+        // Update prediction display
+        updatePrediction(data.prediction_label, data.confidence);
+
+        // Update result row
+        const actualLbl = getTrendLabel(data.actual_trend);
+        el.actualLabel.textContent = 'Actual: ' + actualLbl;
+        el.predictedLabel.textContent = 'Pred: ' + data.prediction_label;
+        el.verdictBadge.textContent = isCorrect ? 'CORRECT' : 'WRONG';
+        el.verdictBadge.className = 'result-verdict ' + (isCorrect ? 'correct' : 'wrong');
+
+        // Agent reasoning
+        el.explText.textContent = data.explanation;
+        el.stepCount.textContent = 'STEP ' + data.next_step;
+
         // Reward
         const rew = data.reward;
-        elements.rewardPulse.textContent = (rew >= 0 ? '+' : '') + rew.toFixed(2);
-        elements.rewardPulse.style.color = rew > 0 ? '#00ff88' : (rew < 0 ? '#ff3e3e' : '#fff');
-        
-        updateRewardBreakdown(data.reward_detail);
-        
-        // Logs
-        addLog(`Predicted ${data.prediction_label} | Actual: ${getTrendLabel(data.actual_trend)} | Reward: ${rew.toFixed(2)}`);
-        
+        el.rewardPulse.textContent = (rew >= 0 ? '+' : '') + rew.toFixed(2);
+        el.rewardPulse.className = 'reward-num ' + (rew > 0 ? 'pos' : rew < 0 ? 'neg' : '');
+        renderRewardBars(data.reward_detail);
+
+        // Cumulative stats
+        el.statStep.textContent = stepCount;
+        el.statAcc.textContent = ((correctCount / stepCount) * 100).toFixed(1) + '%';
+        el.statReward.textContent = totalReward >= 0
+            ? '+' + totalReward.toFixed(2)
+            : totalReward.toFixed(2);
+        el.statCorrect.textContent = correctCount;
+        el.statStreak.textContent = currentStreak;
+
+        // Log entry
+        const icon = isCorrect ? '[OK]' : '[--]';
+        addLog(icon, `Pred: ${data.prediction_label} | Actual: ${actualLbl} | Conf: ${(data.confidence*100).toFixed(0)}% | Rew: ${rew.toFixed(2)}`);
+
         // Chart
         updateTrendChart(data.next_step, data.actual_trend, data.prediction);
-        
+
+        if (data.done) {
+            stopAutoRun();
+            addLog('[END]', 'Simulation complete.');
+        }
+
+        el.liveIndicator.textContent = 'LIVE';
+        el.liveIndicator.className = 'live-dot live';
     } catch (e) {
-        addLog("Critical: Data stream interrupted.");
+        addLog('[ERR]', 'Data stream interrupted: ' + e.message);
+        el.liveIndicator.textContent = 'ERROR';
+        el.liveIndicator.className = 'live-dot error';
+        stopAutoRun();
     }
-    elements.stepBtn.classList.remove('loading');
+    el.stepBtn.disabled = false;
 }
 
-function updatePredictionUI(label, conf) {
-    elements.predictionText.textContent = label.toUpperCase();
-    elements.predictionDisplay.className = 'prediction-display ' + label.toLowerCase();
-    elements.confidenceBadge.textContent = `${(conf * 100).toFixed(1)}% CONF`;
+// ── Prediction UI ──────────────────────────────────────────────────────────────
+function updatePrediction(label, conf) {
+    el.predText.textContent = label.toUpperCase();
+    el.predDisplay.className = 'prediction-display ' + label.toLowerCase();
+    el.confBadge.textContent = (conf * 100).toFixed(1) + '% CONF';
+    el.confBadge.className = 'conf-badge ' + (conf > 0.7 ? 'high' : conf > 0.5 ? 'mid' : 'low');
 }
 
-function updateRewardBreakdown(detail) {
-    elements.rewardList.innerHTML = '';
-    Object.entries(detail).forEach(([k, v]) => {
-        if (v === 0) return;
-        const li = document.createElement('li');
-        li.style.color = v > 0 ? '#00ff88' : '#ff3e3e';
-        li.textContent = `${k}: ${v > 0 ? '+' : ''}${v.toFixed(2)}`;
-        elements.rewardList.appendChild(li);
+// ── Reward Bars ────────────────────────────────────────────────────────────────
+function renderRewardBars(detail) {
+    el.rewardBars.innerHTML = '';
+    const entries = Object.entries(detail).filter(([, v]) => v !== 0);
+    if (entries.length === 0) {
+        el.rewardBars.innerHTML = '<span class="no-reward">No reward components this step.</span>';
+        return;
+    }
+    entries.forEach(([k, v]) => {
+        const row = document.createElement('div');
+        row.className = 'rbar-row';
+        const isPos = v > 0;
+        row.innerHTML = `
+            <span class="rbar-label">${k.replace(/_/g, ' ')}</span>
+            <div class="rbar-track">
+                <div class="rbar-fill ${isPos ? 'pos' : 'neg'}" style="width:${Math.min(Math.abs(v),2)/2*100}%"></div>
+            </div>
+            <span class="rbar-val ${isPos ? 'pos' : 'neg'}">${isPos ? '+' : ''}${v.toFixed(2)}</span>
+        `;
+        el.rewardBars.appendChild(row);
     });
 }
 
-function addLog(msg) {
+// ── Log ────────────────────────────────────────────────────────────────────────
+function addLog(tag, msg) {
     const entry = document.createElement('div');
     entry.className = 'log-entry';
-    entry.textContent = `> ${msg}`;
-    elements.logContainer.prepend(entry);
+    const now = new Date();
+    const ts = now.toTimeString().slice(0, 8);
+    entry.innerHTML = `<span class="log-ts">${ts}</span> <span class="log-tag">${tag}</span> ${msg}`;
+    el.logContainer.prepend(entry);
+    // Keep max 100 entries
+    while (el.logContainer.children.length > 100) {
+        el.logContainer.removeChild(el.logContainer.lastChild);
+    }
 }
 
+// ── Trend Chart ────────────────────────────────────────────────────────────────
+function updateTrendChart(step, actual, pred) {
+    trendHistory.push({ step, actual, pred });
+    if (trendHistory.length > 50) trendHistory.shift();
+
+    const x = trendHistory.map(d => d.step);
+    const yActual = trendHistory.map(d => d.actual - 1);
+    const yPred = trendHistory.map(d => d.pred - 1);
+
+    const layout = {
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        margin: { t: 5, b: 30, l: 40, r: 10 },
+        font: { color: '#94a3b8', size: 10, family: 'JetBrains Mono' },
+        xaxis: { gridcolor: 'rgba(255,255,255,0.04)', zeroline: false },
+        yaxis: {
+            gridcolor: 'rgba(255,255,255,0.04)',
+            tickvals: [-1, 0, 1],
+            ticktext: ['DOWN', 'NEUTRAL', 'UP'],
+            zeroline: false
+        },
+        showlegend: false,
+        hovermode: 'x unified'
+    };
+
+    const traces = [
+        {
+            x, y: yActual,
+            mode: 'lines',
+            name: 'Market',
+            line: { color: 'rgba(255,255,255,0.5)', width: 2 }
+        },
+        {
+            x, y: yPred,
+            mode: 'markers',
+            name: 'DQN',
+            marker: {
+                color: trendHistory.map((d) =>
+                    d.pred === d.actual ? '#00ff88' : '#ff3e3e'
+                ),
+                size: 8,
+                symbol: 'circle'
+            }
+        }
+    ];
+
+    if (!chartInitialized) {
+        Plotly.newPlot('trend-chart', traces, layout, { displayModeBar: false, responsive: true });
+        chartInitialized = true;
+    } else {
+        Plotly.react('trend-chart', traces, layout);
+    }
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
 function getTrendLabel(val) {
     return val === 2 ? 'UP' : (val === 0 ? 'DOWN' : 'NEUTRAL');
 }
 
-// ── Trend Chart (Demo Section) ───────────────────────────────────────────────
-function updateTrendChart(step, actual, pred) {
-    trendHistory.push({step, actual, pred});
-    if (trendHistory.length > 30) trendHistory.shift();
-    
-    const trace1 = {
-        x: trendHistory.map(d => d.step),
-        y: trendHistory.map(d => d.actual - 1),
-        mode: 'lines', name: 'Market', line: {color: '#fff', width: 1}
-    };
-    const trace2 = {
-        x: trendHistory.map(d => d.step),
-        y: trendHistory.map(d => d.pred - 1),
-        mode: 'markers', name: 'DQN', marker: {color: '#00ff88', size: 10}
-    };
-
-    Plotly.newPlot('trend-chart', [trace1, trace2], {
-        paper_bgcolor: 'rgba(0,0,0,0)',
-        plot_bgcolor: 'rgba(0,0,0,0)',
-        margin: {t:0, b:30, l:40, r:10},
-        font: {color: '#94a3b8', size: 10},
-        xaxis: {gridcolor: 'rgba(255,255,255,0.05)'},
-        yaxis: {gridcolor: 'rgba(255,255,255,0.05)', tickvals: [-1,0,1], ticktext: ['DN','NT','UP']}
-    });
+// ── Auto Run ───────────────────────────────────────────────────────────────────
+function startAutoRun() {
+    if (autoRunInterval) return;
+    el.autoBtn.textContent = 'Stop Auto';
+    el.autoBtn.classList.add('active');
+    autoRunInterval = setInterval(async () => {
+        await takeStep();
+    }, 700);
 }
 
-elements.stepBtn.onclick = takeStep;
+function stopAutoRun() {
+    if (autoRunInterval) {
+        clearInterval(autoRunInterval);
+        autoRunInterval = null;
+    }
+    el.autoBtn.textContent = 'Auto Run';
+    el.autoBtn.classList.remove('active');
+}
 
-// ── Comparison Benchmark ──────────────────────────────────────────────────────
+// ── Reset ──────────────────────────────────────────────────────────────────────
+async function resetSession() {
+    stopAutoRun();
+    sessionInitialized = false;
+    trendHistory = [];
+    totalReward = 0;
+    correctCount = 0;
+    stepCount = 0;
+    currentStreak = 0;
+    chartInitialized = false;
+
+    el.predText.textContent = 'STANDBY';
+    el.predDisplay.className = 'prediction-display neutral';
+    el.confBadge.textContent = '— CONF';
+    el.explText.textContent = 'Waiting for data stream...';
+    el.rewardPulse.textContent = '+0.00';
+    el.rewardPulse.className = 'reward-num';
+    el.rewardBars.innerHTML = '';
+    el.logContainer.innerHTML = '';
+    el.signalBars.innerHTML = '';
+    el.stateVector.textContent = '[—]';
+    el.stepCount.textContent = 'STEP 0';
+    el.statStep.textContent = '0';
+    el.statAcc.textContent = '—';
+    el.statReward.textContent = '0.00';
+    el.statCorrect.textContent = '0';
+    el.statStreak.textContent = '0';
+    el.actualLabel.textContent = '—';
+    el.predictedLabel.textContent = '—';
+    el.verdictBadge.textContent = '—';
+    el.verdictBadge.className = 'result-verdict';
+    el.liveIndicator.textContent = 'IDLE';
+    el.liveIndicator.className = 'live-dot';
+    Plotly.purge('trend-chart');
+
+    await initTerminal();
+}
+
+// ── Button Bindings ────────────────────────────────────────────────────────────
+el.stepBtn.onclick = takeStep;
+el.autoBtn.onclick = () => {
+    if (autoRunInterval) stopAutoRun();
+    else startAutoRun();
+};
+el.resetBtn.onclick = resetSession;
+
+// ── Comparison Benchmark ───────────────────────────────────────────────────────
 document.getElementById('run-compare-btn').onclick = async () => {
     const btn = document.getElementById('run-compare-btn');
     btn.disabled = true;
-    btn.textContent = '⏳ Running Benchmark...';
-    
+    btn.textContent = 'Running Benchmark...';
     document.getElementById('compare-loading').classList.remove('hidden');
     document.getElementById('compare-results').classList.add('hidden');
-    
+
     try {
         const res = await fetch('/api/compare', { method: 'POST' });
         const data = await res.json();
-        
+
         document.getElementById('compare-loading').classList.add('hidden');
         document.getElementById('compare-results').classList.remove('hidden');
-        
-        // Animate numbers
+
         document.getElementById('ml-acc-num').textContent = data.traditional_ml.accuracy + '%';
         document.getElementById('dqn-acc-num').textContent = data.dqn.accuracy + '%';
         document.getElementById('edge-gain-num').textContent = '+' + data.edge + '%';
         document.getElementById('reward-edge-num').textContent = '+' + data.reward_edge;
-        
-        // Detail rows
         document.getElementById('ml-correct').textContent = data.traditional_ml.correct + '/' + data.traditional_ml.steps;
         document.getElementById('ml-reward').textContent = data.traditional_ml.total_reward;
         document.getElementById('ml-steps').textContent = data.traditional_ml.steps;
         document.getElementById('dqn-correct').textContent = data.dqn.correct + '/' + data.dqn.steps;
         document.getElementById('dqn-reward').textContent = data.dqn.total_reward;
         document.getElementById('dqn-steps').textContent = data.dqn.steps;
-        
-        // Rolling accuracy chart
-        const x = Array.from({length: data.dqn.rolling_accuracy.length}, (_, i) => i);
-        
+
+        const x = Array.from({ length: data.dqn.rolling_accuracy.length }, (_, i) => i);
         Plotly.newPlot('compare-chart', [
             {
                 x, y: data.traditional_ml.rolling_accuracy,
                 type: 'scatter', mode: 'lines',
-                name: 'Traditional ML', line: {color: '#ff3e3e', width: 2}
+                name: 'Traditional ML', line: { color: '#ff3e3e', width: 2 }
             },
             {
                 x, y: data.dqn.rolling_accuracy,
                 type: 'scatter', mode: 'lines',
-                name: 'DQN', line: {color: '#00ff88', width: 2}
+                name: 'DQN', line: { color: '#00ff88', width: 2 }
             }
         ], {
             paper_bgcolor: 'rgba(0,0,0,0)',
             plot_bgcolor: 'rgba(0,0,0,0)',
             showlegend: true,
-            legend: {font: {color: '#94a3b8'}},
-            margin: {t: 10, b: 40, l: 50, r: 10},
-            font: {color: '#94a3b8', size: 11},
-            xaxis: {title: 'Step', gridcolor: 'rgba(255,255,255,0.05)'},
-            yaxis: {title: 'Accuracy %', gridcolor: 'rgba(255,255,255,0.05)', range: [0, 100]}
-        });
-        
+            legend: { font: { color: '#94a3b8' } },
+            margin: { t: 10, b: 40, l: 50, r: 10 },
+            font: { color: '#94a3b8', size: 11 },
+            xaxis: { title: 'Step', gridcolor: 'rgba(255,255,255,0.05)' },
+            yaxis: { title: 'Accuracy %', gridcolor: 'rgba(255,255,255,0.05)', range: [0, 100] }
+        }, { displayModeBar: false, responsive: true });
+
     } catch (e) {
         alert('Benchmark failed: ' + e.message);
     }
-    
+
     btn.disabled = false;
-    btn.textContent = '⚡ Run Live Benchmark (500 Steps)';
+    btn.textContent = 'Run Live Benchmark (500 Steps)';
 };

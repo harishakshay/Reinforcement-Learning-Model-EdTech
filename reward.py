@@ -49,11 +49,11 @@ def compute_reward(
         reward = -0.2
         
     breakdown = {
-        "correct_direction": correct_direction,
-        "is_early": is_early,
-        "high_confidence_bonus": (correct_direction and confidence > 0.8),
-        "wrong_prediction_penalty": wrong_prediction,
-        "total": round(reward, 4)
+        "correct_direction": float(correct_direction),
+        "is_early": float(is_early),
+        "high_confidence_bonus": float(correct_direction and confidence > 0.8),
+        "wrong_prediction_penalty": float(wrong_prediction),
+        "total": round(float(reward), 4)
     }
     
     return reward, breakdown

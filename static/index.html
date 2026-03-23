@@ -62,62 +62,110 @@
             </div>
         </section>
 
-        <!-- LIVE ANALYSIS SECTION (The 'Demo') -->
+        <!-- LIVE ANALYSIS SECTION -->
         <section id="demo-section" class="tab-pane">
             <div class="section-header">
                 <span class="section-tag">Trend Terminal</span>
                 <h2>Real-time Hype Analysis</h2>
-                <p>Observe the agent in the "Hype Terminal". Every step processes 10 signals to output a trend prediction with a confidence score.</p>
+                <p>Watch the DQN agent process live social signals and predict meme coin momentum, step by step.</p>
+            </div>
+
+            <!-- Top Stats Bar -->
+            <div class="live-stats-bar">
+                <div class="live-stat">
+                    <span class="live-stat-val" id="stat-step">0</span>
+                    <span class="live-stat-label">Steps Run</span>
+                </div>
+                <div class="live-stat accent-green">
+                    <span class="live-stat-val" id="stat-acc">—</span>
+                    <span class="live-stat-label">Accuracy</span>
+                </div>
+                <div class="live-stat accent-cyan">
+                    <span class="live-stat-val" id="stat-reward">0.00</span>
+                    <span class="live-stat-label">Total Reward</span>
+                </div>
+                <div class="live-stat accent-purple">
+                    <span class="live-stat-val" id="stat-correct">0</span>
+                    <span class="live-stat-label">Correct Calls</span>
+                </div>
+                <div class="live-stat">
+                    <span class="live-stat-val" id="stat-streak">0</span>
+                    <span class="live-stat-label">Current Streak</span>
+                </div>
             </div>
 
             <div class="dashboard-grid">
-                <!-- Left: Signals -->
-                <div class="panel metrics-panel glass-card">
-                    <h3>💾 Live Signals (State)</h3>
-                    <div id="metrics-grid" class="metrics-grid"></div>
-                    <div class="feature-map">
-                        <h4>State Vector</h4>
-                        <pre id="state-vector">[0,0,0,0,0,0,0,0,0,0]</pre>
+                <!-- Left: Signal Bars -->
+                <div class="panel glass-card">
+                    <div class="panel-title">
+                        <span class="panel-icon">&#9679;</span>
+                        Live Signal Feed
+                        <span class="live-dot" id="live-indicator">IDLE</span>
+                    </div>
+                    <div id="signal-bars" class="signal-bars"></div>
+                    <div class="state-vec-box">
+                        <span class="state-vec-label">State Vector</span>
+                        <code id="state-vector">[—]</code>
                     </div>
                 </div>
 
-                <!-- Center: Prediction -->
-                <div class="panel main-panel">
-                    <div class="glass-card prediction-card active-card">
+                <!-- Center: Prediction + Chart -->
+                <div class="panel center-col">
+                    <!-- Prediction Card -->
+                    <div class="glass-card prediction-card">
                         <div class="card-header">
                             <span class="step-pill" id="step-count">STEP 0</span>
-                            <span id="confidence-badge" class="badge">0% CONF</span>
+                            <span id="confidence-badge" class="conf-badge">— CONF</span>
                         </div>
                         <div id="prediction-display" class="prediction-display neutral">
                             <span id="prediction-text">STANDBY</span>
                         </div>
+                        <div class="result-row" id="result-row">
+                            <span class="result-tag" id="actual-label">—</span>
+                            <span class="result-sep">vs</span>
+                            <span class="result-tag predicted" id="predicted-label">—</span>
+                            <span class="result-verdict" id="verdict-badge">—</span>
+                        </div>
                         <div class="reasoning-box">
-                            <div class="brain-icon">🧠</div>
+                            <div class="brain-icon">&#129504;</div>
                             <div>
-                                <h4>Agent Decision Log</h4>
-                                <p id="explanation-text">Waiting for data simulator to broadcast...</p>
+                                <h4>Agent Reasoning</h4>
+                                <p id="explanation-text">Waiting for data stream...</p>
                             </div>
                         </div>
                         <div class="controls">
-                            <button id="step-btn" class="primary-btn pulse-glow">Analyze Next Signal →</button>
+                            <button id="step-btn" class="primary-btn pulse-glow">Analyze Next Signal</button>
+                            <button id="auto-btn" class="sec-btn">Auto Run</button>
+                            <button id="reset-btn" class="ghost-btn">Reset</button>
                         </div>
                     </div>
+
+                    <!-- Chart -->
                     <div class="glass-card chart-card">
-                        <h3>📉 Simulated Market vs AI Predictions</h3>
-                        <div id="trend-chart" style="height: 250px;"></div>
+                        <div class="chart-title">
+                            Market Signal vs AI Prediction
+                            <span class="chart-legend"><span class="leg-dot white"></span>Market <span class="leg-dot green"></span>DQN</span>
+                        </div>
+                        <div id="trend-chart" style="height: 220px;"></div>
                     </div>
                 </div>
 
-                <!-- Right: Rewards -->
-                <div class="panel logs-panel glass-card">
-                    <h3>🔥 Neural Feedback</h3>
-                    <div id="reward-pulse" class="reward-pulse">0.00</div>
-                    <div class="reward-breakdown">
-                        <h4>"Secret Sauce" Analysis</h4>
-                        <ul id="reward-list"></ul>
+                <!-- Right: Reward + Log -->
+                <div class="panel glass-card">
+                    <div class="panel-title">
+                        <span class="panel-icon reward-icon">&#9650;</span>
+                        Neural Feedback
                     </div>
-                    <div class="timeline">
-                        <h4>Action History</h4>
+                    <div class="reward-display">
+                        <span class="reward-num" id="reward-pulse">+0.00</span>
+                        <span class="reward-label">Step Reward</span>
+                    </div>
+                    <div class="reward-bar-section">
+                        <h4 class="sub-label">Reward Breakdown</h4>
+                        <div id="reward-bars"></div>
+                    </div>
+                    <div class="log-section">
+                        <h4 class="sub-label">Action Log</h4>
                         <div id="log-container" class="log-container"></div>
                     </div>
                 </div>
@@ -133,12 +181,12 @@
             </div>
 
             <div class="compare-launch">
-                <button id="run-compare-btn" class="primary-btn pulse-glow">⚡ Run Live Benchmark (500 Steps)</button>
+                <button id="run-compare-btn" class="primary-btn pulse-glow">&#9889; Run Live Benchmark (500 Steps)</button>
             </div>
 
             <!-- Loading -->
             <div id="compare-loading" class="training-status hidden">
-                <div class="neural-pulse"><div class="pulse-core">⚔️</div></div>
+                <div class="neural-pulse"><div class="pulse-core">&#9876;</div></div>
                 <div class="status-text">
                     <h3>Running Head-to-Head Benchmark...</h3>
                     <p>Both agents are processing 500 market ticks on identical data</p>
@@ -150,7 +198,7 @@
                 <div class="comparison-grid">
                     <!-- TRADITIONAL ML CARD -->
                     <div class="glass-card compare-card">
-                        <div class="compare-card-icon">📊</div>
+                        <div class="compare-card-icon">&#128202;</div>
                         <h3>Traditional ML</h3>
                         <div class="big-stat">
                             <span class="big-num red" id="ml-acc-num">0%</span>
@@ -178,7 +226,7 @@
 
                     <!-- DQN CARD -->
                     <div class="glass-card compare-card">
-                        <div class="compare-card-icon">🧠</div>
+                        <div class="compare-card-icon">&#129504;</div>
                         <h3>HypeSense DQN</h3>
                         <div class="big-stat">
                             <span class="big-num green" id="dqn-acc-num">0%</span>
@@ -194,7 +242,7 @@
 
                 <!-- Rolling Accuracy Chart -->
                 <div class="glass-card chart-card" style="max-width: 1000px; margin: 2rem auto;">
-                    <h3>📊 Rolling Accuracy Over Time (20-step window)</h3>
+                    <h3>&#128202; Rolling Accuracy Over Time (20-step window)</h3>
                     <p style="color: var(--text-dim); font-size: 0.85rem; margin-bottom: 1rem;">Green = Deep RL (DQN) | Red = Traditional ML (Logistic Regression + Feature Eng.)</p>
                     <div id="compare-chart" style="height: 300px;"></div>
                 </div>
