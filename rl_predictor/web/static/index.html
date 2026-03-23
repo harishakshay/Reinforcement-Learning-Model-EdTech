@@ -185,107 +185,106 @@
                 <p>A unified predictive tool that identifies trending tokens based on social signals and neural-score analysis.</p>
             </div>
 
-            <div class="glass-card ranking-card">
-                <!-- KPI Grid -->
-                <div class="kpi-grid">
-                    <div class="kpi-card glass-card">
-                        <span class="kpi-label">Hottest Token</span>
-                        <div class="kpi-value grad-cyan" id="kpi-hot-coin">PEPE</div>
-                        <div class="kpi-sub" id="kpi-hot-viral">Peak Viral Score</div>
-                    </div>
-                    <div class="kpi-card glass-card">
-                        <span class="kpi-label">Market Bias</span>
-                        <div class="kpi-value" id="kpi-market-sent">BULLISH</div>
-                        <div class="kpi-sub" id="kpi-market-score">0.65 Avg Sentiment</div>
-                    </div>
-                    <div class="kpi-card glass-card">
-                        <span class="kpi-label">Neural Integrity</span>
-                        <div class="kpi-value grad-purple">ONLINE</div>
-                        <div class="kpi-sub">5 Engines Syncing</div>
-                    </div>
+            <!-- KPI Scorecards -->
+            <div class="kpi-grid">
+                <div class="glass-card kpi-card">
+                    <span class="kpi-label">Hottest Token</span>
+                    <span class="kpi-value grad-cyan" id="kpi-hot-coin">--</span>
+                    <span class="kpi-sub" id="kpi-hot-viral">0.0 Viral Score</span>
                 </div>
+                <div class="glass-card kpi-card">
+                    <span class="kpi-label">Aggregated Sentiment</span>
+                    <span class="kpi-value" id="kpi-market-score">0.00</span>
+                    <span class="kpi-sub" id="kpi-market-sent">NEUTRAL</span>
+                </div>
+                <div class="glass-card kpi-card">
+                    <span class="kpi-label">Engine Health</span>
+                    <span class="kpi-value grad-purple">98.4%</span>
+                    <span class="kpi-sub">Neural Consensus Active</span>
+                </div>
+            </div>
 
-                <div class="ml-dashboard-layout">
-                    <!-- Sidebar -->
-                    <div class="engine-sidebar">
-                        <h4 class="sidebar-header">Engine Pipeline</h4>
-                        <div class="engine-status-list">
-                            <div class="e-item">
-                                <span class="e-dot pulse-green"></span>
-                                <span class="e-name">Text Cleaning</span>
+            <!-- Alpha-Priority Dashboard Layout -->
+            <div class="ml-insights-layout">
+                <div class="ml-top-flex">
+                    <!-- Left: Professional Detailed Analysis -->
+                    <div class="ml-main-col">
+                        <div class="glass-card ranking-card no-margin">
+                            <div class="panel-title" style="padding: 1.25rem 1.25rem 0.5rem 1.25rem;">
+                                <span class="panel-icon">&#128200;</span>
+                                Detailed Market Analysis
                             </div>
-                            <div class="e-item">
-                                <span class="e-dot pulse-green"></span>
-                                <span class="e-name">RoBERTa Neural</span>
-                            </div>
-                            <div class="e-item">
-                                <span class="e-dot pulse-green"></span>
-                                <span class="e-name">Engagement Engine</span>
-                            </div>
-                            <div class="e-item">
-                                <span class="e-dot pulse-green"></span>
-                                <span class="e-name">TrendSpike Detection</span>
-                            </div>
-                            <div class="e-item">
-                                <span class="e-dot pulse-green"></span>
-                                <span class="e-name">Random Forest Fusion</span>
-                            </div>
-                        </div>
-                        
-                        <div class="live-alerts">
-                            <div class="alert-head">LIVE HYPE ALERTS</div>
-                            <div id="ml-alerts-container" class="alert-feed">
-                                <span class="alert-p">Monitoring 200 real-time social signals...</span>
+                            <div class="table-responsive">
+                                <table class="ml-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Token Name</th>
+                                            <th>Neural Trend</th>
+                                            <th>Signal Confidence</th>
+                                            <th>Viral Score</th>
+                                            <th>Sentiment Delta</th>
+                                            <th>Primary Driver</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="ml-ranking-body">
+                                        <!-- Populated via script.js -->
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Main Table -->
-                    <div class="table-responsive">
-                        <table class="ml-table" id="ml-ranking-table">
-                            <thead>
-                                <tr>
-                                    <th>Token</th>
-                                    <th>Trend</th>
-                                    <th>Conf</th>
-                                    <th>Viral Score</th>
-                                    <th>Sentiment</th>
-                                    <th>Signal Driver</th>
-                                </tr>
-                            </thead>
-                            <tbody id="ml-ranking-body">
-                                <tr><td colspan="6" style="text-align:center; padding: 2rem;">Ingesting HypeSense Stream...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-            
-            </div>
-            
-            <!-- Advanced Intelligence Section -->
-            <div class="intel-grid">
-                <!-- Feature Importance -->
-                <div class="glass-card intel-card">
-                    <h4 class="intel-title">Decision Drivers</h4>
-                    <p class="intel-desc">RF Feature Importance weights</p>
-                    <div id="rf-feature-chart" style="height: 180px;"></div>
-                </div>
-
-                <!-- Trending Keywords -->
-                <div class="glass-card intel-card">
-                    <h4 class="intel-title" id="keyword-title">Social Signals</h4>
-                    <p class="intel-desc">Trending keywords in the hype cycle</p>
-                    <div id="keyword-cloud" class="keyword-cloud">
-                        <span class="word-pill">Loading...</span>
+                    <!-- Right: Intelligent Sidebar (Feed Only) -->
+                    <div class="ml-side-col">
+                        <!-- Social Signal Watcher -->
+                        <div class="glass-card sidebar-feed sidebar-intel no-margin">
+                            <div class="feed-header">
+                                <span class="feed-title">Social Signal Watcher</span>
+                                <div class="live-tag"><span class="live-blink"></span>LIVE STREAM</div>
+                            </div>
+                            <div id="ml-social-feed" class="signal-list" style="height: 400px;">
+                                <div class="feed-item loading">Ingesting HypeSense stream...</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Model Radar -->
-                <div class="glass-card intel-card">
-                    <h4 class="intel-title">Model Accuracy Profile</h4>
-                    <p class="intel-desc">Ensemble Precision, Recall, and F1</p>
-                    <div id="model-health-radar" style="height: 180px;"></div>
+                <!-- Mid Section: Horizontal Intelligence Strip -->
+                <div class="ml-mid-section">
+                    <div class="intel-grid">
+                        <!-- Feature Importance -->
+                        <div class="glass-card intel-card">
+                            <h4 class="intel-title">Decision Drivers</h4>
+                            <p class="intel-desc">RF Feature Importance weights</p>
+                            <div id="rf-feature-chart" style="height: 160px;"></div>
+                        </div>
+
+                        <!-- Trending Keywords -->
+                        <div class="glass-card intel-card">
+                            <h4 class="intel-title" id="keyword-title">Social Signals</h4>
+                            <p class="intel-desc">Trending in the hype cycle</p>
+                            <div id="keyword-cloud" class="keyword-cloud">
+                                <span class="word-pill">Loading...</span>
+                            </div>
+                        </div>
+
+                        <!-- Model Radar -->
+                        <div class="glass-card intel-card">
+                            <h4 class="intel-title">Model Accuracy Profile</h4>
+                            <div id="model-health-radar" style="height: 160px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom Section: Foundational Matrix -->
+                <div class="ml-bottom-full">
+                    <div class="glass-card viz-card">
+                        <div class="viz-header">
+                            <span class="viz-title">Hype Matrix</span>
+                            <span class="viz-desc">Sentiment (-1 to +1) vs. Viral Velocity</span>
+                        </div>
+                        <div id="hype-matrix" style="height: 400px;"></div>
+                    </div>
                 </div>
             </div>
 

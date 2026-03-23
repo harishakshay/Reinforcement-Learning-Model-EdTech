@@ -101,7 +101,7 @@ async function initTerminal() {
 function renderSignalBars(state) {
     el.signalBars.innerHTML = '';
     state.forEach((val, i) => {
-        const pct = Math.min(Math.max((val + 1) / 2, 0), 1); // normalize -1..1 to 0..1
+        const pct = Math.min(Math.max((val + 1) / 2, 0), 1); 
         const color = pct > 0.65 ? '#00ff88' : pct > 0.35 ? '#00e5ff' : '#ff3e3e';
         const bar = document.createElement('div');
         bar.className = 'signal-row';
@@ -114,7 +114,6 @@ function renderSignalBars(state) {
         `;
         el.signalBars.appendChild(bar);
     });
-    el.stateVector.textContent = formatVector(state);
 }
 
 function formatVector(state) {
@@ -142,43 +141,30 @@ async function takeStep() {
         }
         totalReward += data.reward;
 
-        // Update signal bars
         renderSignalBars(data.state);
-
-        // Update prediction display
         updatePrediction(data.prediction_label, data.confidence);
 
-        // Update result row
         const actualLbl = getTrendLabel(data.actual_trend);
         el.actualLabel.textContent = 'Actual: ' + actualLbl;
         el.predictedLabel.textContent = 'Pred: ' + data.prediction_label;
         el.verdictBadge.textContent = isCorrect ? 'CORRECT' : 'WRONG';
         el.verdictBadge.className = 'result-verdict ' + (isCorrect ? 'correct' : 'wrong');
 
-        // Agent reasoning
         el.explText.textContent = data.explanation;
         el.stepCount.textContent = 'STEP ' + data.next_step;
 
-        // Reward
         const rew = data.reward;
         el.rewardPulse.textContent = (rew >= 0 ? '+' : '') + rew.toFixed(2);
         el.rewardPulse.className = 'reward-num ' + (rew > 0 ? 'pos' : rew < 0 ? 'neg' : '');
         renderRewardBars(data.reward_detail);
 
-        // Cumulative stats
         el.statStep.textContent = stepCount;
         el.statAcc.textContent = ((correctCount / stepCount) * 100).toFixed(1) + '%';
-        el.statReward.textContent = totalReward >= 0
-            ? '+' + totalReward.toFixed(2)
-            : totalReward.toFixed(2);
+        el.statReward.textContent = totalReward >= 0 ? '+' + totalReward.toFixed(2) : totalReward.toFixed(2);
         el.statCorrect.textContent = correctCount;
         el.statStreak.textContent = currentStreak;
 
-        // Log entry
-        const icon = isCorrect ? '[OK]' : '[--]';
-        addLog(icon, `Pred: ${data.prediction_label} | Actual: ${actualLbl} | Conf: ${(data.confidence*100).toFixed(0)}% | Rew: ${rew.toFixed(2)}`);
-
-        // Chart
+        addLog(isCorrect ? '[OK]' : '[--]', `Pred: ${data.prediction_label} | Actual: ${actualLbl} | Conf: ${(data.confidence*100).toFixed(0)}% | Rew: ${rew.toFixed(2)}`);
         updateTrendChart(data.next_step, data.actual_trend, data.prediction);
 
         if (data.done) {
@@ -236,17 +222,13 @@ function addLog(tag, msg) {
     const ts = now.toTimeString().slice(0, 8);
     entry.innerHTML = `<span class="log-ts">${ts}</span> <span class="log-tag">${tag}</span> ${msg}`;
     el.logContainer.prepend(entry);
-    // Keep max 100 entries
-    while (el.logContainer.children.length > 100) {
-        el.logContainer.removeChild(el.logContainer.lastChild);
-    }
+    while (el.logContainer.children.length > 100) el.logContainer.removeChild(el.logContainer.lastChild);
 }
 
 // ── Trend Chart ────────────────────────────────────────────────────────────────
 function updateTrendChart(step, actual, pred) {
     trendHistory.push({ step, actual, pred });
     if (trendHistory.length > 50) trendHistory.shift();
-
     const x = trendHistory.map(d => d.step);
     const yActual = trendHistory.map(d => d.actual - 1);
     const yPred = trendHistory.map(d => d.pred - 1);
@@ -257,199 +239,91 @@ function updateTrendChart(step, actual, pred) {
         margin: { t: 5, b: 30, l: 40, r: 10 },
         font: { color: '#94a3b8', size: 10, family: 'JetBrains Mono' },
         xaxis: { gridcolor: 'rgba(255,255,255,0.04)', zeroline: false },
-        yaxis: {
-            gridcolor: 'rgba(255,255,255,0.04)',
-            tickvals: [-1, 0, 1],
-            ticktext: ['DOWN', 'NEUTRAL', 'UP'],
-            zeroline: false
-        },
-        showlegend: false,
-        hovermode: 'x unified'
+        yaxis: { gridcolor: 'rgba(255,255,255,0.04)', tickvals: [-1, 0, 1], ticktext: ['DOWN', 'NEUTRAL', 'UP'], zeroline: false },
+        showlegend: false, hovermode: 'x unified'
     };
-
     const traces = [
-        {
-            x, y: yActual,
-            mode: 'lines',
-            name: 'Market',
-            line: { color: 'rgba(255,255,255,0.5)', width: 2 }
-        },
-        {
-            x, y: yPred,
-            mode: 'markers',
-            name: 'DQN',
-            marker: {
-                color: trendHistory.map((d) =>
-                    d.pred === d.actual ? '#00ff88' : '#ff3e3e'
-                ),
-                size: 8,
-                symbol: 'circle'
-            }
-        }
+        { x, y: yActual, mode: 'lines', name: 'Market', line: { color: 'rgba(255,255,255,0.5)', width: 2 } },
+        { x, y: yPred, mode: 'markers', name: 'DQN', marker: { color: trendHistory.map((d) => d.pred === d.actual ? '#00ff88' : '#ff3e3e'), size: 8 } }
     ];
-
     if (!chartInitialized) {
         Plotly.newPlot('trend-chart', traces, layout, { displayModeBar: false, responsive: true });
         chartInitialized = true;
-    } else {
-        Plotly.react('trend-chart', traces, layout);
-    }
+    } else Plotly.react('trend-chart', traces, layout);
 }
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
-function getTrendLabel(val) {
-    return val === 2 ? 'UP' : (val === 0 ? 'DOWN' : 'NEUTRAL');
-}
+function getTrendLabel(val) { return val === 2 ? 'UP' : (val === 0 ? 'DOWN' : 'NEUTRAL'); }
 
 // ── Auto Run ───────────────────────────────────────────────────────────────────
 function startAutoRun() {
     if (autoRunInterval) return;
     el.autoBtn.textContent = 'Stop Auto';
     el.autoBtn.classList.add('active');
-    autoRunInterval = setInterval(async () => {
-        await takeStep();
-    }, 700);
+    autoRunInterval = setInterval(async () => { await takeStep(); }, 700);
 }
-
 function stopAutoRun() {
-    if (autoRunInterval) {
-        clearInterval(autoRunInterval);
-        autoRunInterval = null;
-    }
+    if (autoRunInterval) { clearInterval(autoRunInterval); autoRunInterval = null; }
     el.autoBtn.textContent = 'Auto Run';
     el.autoBtn.classList.remove('active');
 }
-
-// ── Reset ──────────────────────────────────────────────────────────────────────
 async function resetSession() {
-    stopAutoRun();
-    sessionInitialized = false;
-    trendHistory = [];
-    totalReward = 0;
-    correctCount = 0;
-    stepCount = 0;
-    currentStreak = 0;
-    chartInitialized = false;
-
-    el.predText.textContent = 'STANDBY';
-    el.predDisplay.className = 'prediction-display neutral';
-    el.confBadge.textContent = '— CONF';
-    el.explText.textContent = 'Waiting for data stream...';
-    el.rewardPulse.textContent = '+0.00';
-    el.rewardPulse.className = 'reward-num';
-    el.rewardBars.innerHTML = '';
-    el.logContainer.innerHTML = '';
-    el.signalBars.innerHTML = '';
-    el.stateVector.textContent = '[—]';
-    el.stepCount.textContent = 'STEP 0';
-    el.statStep.textContent = '0';
-    el.statAcc.textContent = '—';
-    el.statReward.textContent = '0.00';
-    el.statCorrect.textContent = '0';
-    el.statStreak.textContent = '0';
-    el.actualLabel.textContent = '—';
-    el.predictedLabel.textContent = '—';
-    el.verdictBadge.textContent = '—';
-    el.verdictBadge.className = 'result-verdict';
-    el.liveIndicator.textContent = 'IDLE';
-    el.liveIndicator.className = 'live-dot';
+    stopAutoRun(); resetState(); await initTerminal();
+}
+function resetState() {
+    sessionInitialized = false; trendHistory = []; totalReward = 0; correctCount = 0; stepCount = 0; currentStreak = 0; chartInitialized = false;
+    el.logContainer.innerHTML = ''; el.statStep.textContent = '0'; el.statAcc.textContent = '—';
     Plotly.purge('trend-chart');
-
-    await initTerminal();
 }
 
 // ── Button Bindings ────────────────────────────────────────────────────────────
-el.stepBtn.onclick = takeStep;
-el.autoBtn.onclick = () => {
-    if (autoRunInterval) stopAutoRun();
-    else startAutoRun();
-};
-el.resetBtn.onclick = resetSession;
+if (el.stepBtn) el.stepBtn.onclick = takeStep;
+if (el.autoBtn) el.autoBtn.onclick = () => autoRunInterval ? stopAutoRun() : startAutoRun();
+if (el.resetBtn) el.resetBtn.onclick = resetSession;
 
 // ── Comparison Benchmark ───────────────────────────────────────────────────────
-document.getElementById('run-compare-btn').onclick = async () => {
-    const btn = document.getElementById('run-compare-btn');
-    btn.disabled = true;
-    btn.textContent = 'Running Benchmark...';
-    document.getElementById('compare-loading').classList.remove('hidden');
-    document.getElementById('compare-results').classList.add('hidden');
+const runCompareBtn = document.getElementById('run-compare-btn');
+if (runCompareBtn) {
+    runCompareBtn.onclick = async () => {
+        runCompareBtn.disabled = true;
+        runCompareBtn.textContent = 'Running Benchmark...';
+        document.getElementById('compare-loading').classList.remove('hidden');
+        document.getElementById('compare-results').classList.add('hidden');
+        try {
+            const res = await fetch('/api/compare', { method: 'POST' });
+            const data = await res.json();
+            document.getElementById('compare-loading').classList.add('hidden');
+            document.getElementById('compare-results').classList.remove('hidden');
+            document.getElementById('ml-acc-num').textContent = data.traditional_ml.accuracy + '%';
+            document.getElementById('dqn-acc-num').textContent = data.dqn.accuracy + '%';
+            document.getElementById('edge-gain-num').textContent = '+' + data.edge + '%';
+            const x = Array.from({ length: 50 }, (_, i) => i);
+            Plotly.newPlot('compare-chart', [
+                { x, y: data.traditional_ml.rolling_accuracy, type: 'scatter', name: 'ML', line: { color: '#ff3e3e' } },
+                { x, y: data.dqn.rolling_accuracy, type: 'scatter', name: 'DQN', line: { color: '#00ff88' } }
+            ], { paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', font: { color: '#94a3b8' } });
+        } catch (e) { alert('Benchmark failed: ' + e.message); }
+        runCompareBtn.disabled = false;
+        runCompareBtn.textContent = 'Run Live Benchmark (500 Steps)';
+    };
+}
 
-    try {
-        const res = await fetch('/api/compare', { method: 'POST' });
-        const data = await res.json();
-
-        document.getElementById('compare-loading').classList.add('hidden');
-        document.getElementById('compare-results').classList.remove('hidden');
-
-        document.getElementById('ml-acc-num').textContent = data.traditional_ml.accuracy + '%';
-        document.getElementById('dqn-acc-num').textContent = data.dqn.accuracy + '%';
-        document.getElementById('edge-gain-num').textContent = '+' + data.edge + '%';
-        document.getElementById('reward-edge-num').textContent = '+' + data.reward_edge;
-        document.getElementById('ml-correct').textContent = data.traditional_ml.correct + '/' + data.traditional_ml.steps;
-        document.getElementById('ml-reward').textContent = data.traditional_ml.total_reward;
-        document.getElementById('ml-steps').textContent = data.traditional_ml.steps;
-        document.getElementById('dqn-correct').textContent = data.dqn.correct + '/' + data.dqn.steps;
-        document.getElementById('dqn-reward').textContent = data.dqn.total_reward;
-        document.getElementById('dqn-steps').textContent = data.dqn.steps;
-
-        const x = Array.from({ length: data.dqn.rolling_accuracy.length }, (_, i) => i);
-        Plotly.newPlot('compare-chart', [
-            {
-                x, y: data.traditional_ml.rolling_accuracy,
-                type: 'scatter', mode: 'lines',
-                name: 'Traditional ML', line: { color: '#ff3e3e', width: 2 }
-            },
-            {
-                x, y: data.dqn.rolling_accuracy,
-                type: 'scatter', mode: 'lines',
-                name: 'DQN', line: { color: '#00ff88', width: 2 }
-            }
-        ], {
-            paper_bgcolor: 'rgba(0,0,0,0)',
-            plot_bgcolor: 'rgba(0,0,0,0)',
-            showlegend: true,
-            legend: { font: { color: '#94a3b8' } },
-            margin: { t: 10, b: 40, l: 50, r: 10 },
-            font: { color: '#94a3b8', size: 11 },
-            xaxis: { title: 'Step', gridcolor: 'rgba(255,255,255,0.05)' },
-            yaxis: { title: 'Accuracy %', gridcolor: 'rgba(255,255,255,0.05)', range: [0, 100] }
-        }, { displayModeBar: false, responsive: true });
-
-    } catch (e) {
-        alert('Benchmark failed: ' + e.message);
-    }
-
-    btn.disabled = false;
-    btn.textContent = 'Run Live Benchmark (500 Steps)';
-};
-
-// ── ML Insights Table ─────────────────────────────────────────────────────────
+// ── ML Insights High-Impact Hub ───────────────────────────────────────────────
+// ── ML Insights High-Impact Hub ───────────────────────────────────────────────
 async function loadMLRankings() {
+    const matrixDiv = document.getElementById('hype-matrix');
     const tbody = document.getElementById('ml-ranking-body');
-    if (!tbody) return;
-    
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 2rem;">Injesting Neural Stream...</td></tr>';
-    
+    if (!matrixDiv) return;
     try {
         const res = await fetch('/api/ml-rankings');
         const data = await res.json();
-        
-        if (data.error) throw new Error(data.error);
-        
-        tbody.innerHTML = '';
         const coins = Object.entries(data.coins);
         
         // 1. Calculate Aggregates
-        let totalSent = 0;
-        let hotCoin = { name: '', score: -1, viral: 0 };
-        
+        let totalSent = 0; let hotCoin = { name: '', score: -1, viral: 0 };
         coins.forEach(([name, info]) => {
             totalSent += (info.sentiment_score || 0);
-            if (info.meme_viral_score > hotCoin.score) {
-                hotCoin = { name, score: info.meme_viral_score, viral: info.meme_viral_score };
-            }
+            if (info.meme_viral_score > hotCoin.score) hotCoin = { name, score: info.meme_viral_score, viral: info.meme_viral_score };
         });
-        
         const avgSent = totalSent / coins.length;
         const marketBias = avgSent > 0.1 ? 'BULLISH' : (avgSent < -0.1 ? 'BEARISH' : 'NEUTRAL');
         
@@ -459,134 +333,79 @@ async function loadMLRankings() {
         document.getElementById('kpi-market-sent').textContent = marketBias;
         document.getElementById('kpi-market-score').textContent = `${avgSent.toFixed(2)} Avg Sentiment`;
         
-        const alertBox = document.getElementById('ml-alerts-container');
-        alertBox.innerHTML = `
-            <span class="alert-p">🔥 ${hotCoin.name} is decoupling from the market.</span>
-            <span class="alert-p">📈 Overall bias is ${marketBias.toLowerCase()}.</span>
-            <span class="alert-p">🤖 Neural pipeline synchronized.</span>
-        `;
+        // 3. Render High-Impact Visuals
+        renderHypeMatrix(coins); updateSignalFeed(data.individual_posts);
+        renderFeatureImportance(); updateKeywordCloud(hotCoin.name, data.coins[hotCoin.name]); renderModelRadar();
         
-        // 3. Update Intelligence Section
-        renderFeatureImportance();
-        updateKeywordCloud(hotCoin.name, data.coins[hotCoin.name]);
-        renderModelRadar();
+        // 4. Populate Ranking Table
+        if (tbody) {
+            tbody.innerHTML = '';
+            coins.sort((a, b) => (b[1].meme_viral_score || 0) - (a[1].meme_viral_score || 0));
+            coins.forEach(([name, info]) => {
+                const tr = document.createElement('tr');
+                const trendClass = (info.trend_label || 'neutral').toLowerCase();
+                const confPct = ((info.confidence || 0) * 100).toFixed(1);
+                const sentiment = info.sentiment_score !== undefined ? info.sentiment_score : 0;
+                const sentClass = sentiment > 0 ? 'pos' : (sentiment < 0 ? 'neg' : '');
 
-        // 4. Render Table
-        coins.sort((a,b) => b[1].meme_viral_score - a[1].meme_viral_score);
-        
-        coins.forEach(([name, info]) => {
-            const tr = document.createElement('tr');
-            const trendClass = (info.trend_label || 'neutral').toLowerCase();
-            const confPct = ((info.confidence || 0) * 100).toFixed(1);
-            
-            const driver = info.primary_driver 
-                ? info.primary_driver.replace(/_/g, ' ') 
-                : ((info.hype_state_score || 0) > 0.6 ? 'High Hype' : 'Social Analysis');
+                tr.innerHTML = `
+                    <td><span class="coin-name">${name}</span></td>
+                    <td><span class="trend-badge ${trendClass}">${(info.trend_label || 'neutral').toUpperCase()}</span></td>
+                    <td>
+                        <div class="conf-bar-container">
+                            <div class="conf-bar" style="width: ${confPct}%"></div>
+                            <span class="conf-text">${confPct}%</span>
+                        </div>
+                    </td>
+                    <td><span class="viral-num">${(info.meme_viral_score || 0).toFixed(1)}</span></td>
+                    <td><span class="sent-num ${sentClass}">${(sentiment > 0 ? '+' : '')}${sentiment.toFixed(2)}</span></td>
+                    <td class="driver-text">${info.primary_driver || 'Neural Analysis'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
 
-            const sentiment = info.sentiment_score !== undefined ? info.sentiment_score : 0;
-            const sentClass = sentiment > 0 ? 'pos' : (sentiment < 0 ? 'neg' : '');
-
-            tr.innerHTML = `
-                <td><span class="coin-name">${name}</span></td>
-                <td><span class="trend-badge ${trendClass}">${(info.trend_label || 'neutral').toUpperCase()}</span></td>
-                <td>
-                    <div class="conf-bar-container">
-                        <div class="conf-bar" style="width: ${confPct}%"></div>
-                        <span class="conf-text">${confPct}%</span>
-                    </div>
-                </td>
-                <td><span class="viral-num">${(info.meme_viral_score || 0).toFixed(1)}</span></td>
-                <td>
-                    <span class="sent-num ${sentClass}">
-                        ${(sentiment > 0 ? '+' : '')}${sentiment.toFixed(2)}
-                    </span>
-                </td>
-                <td class="driver-text">${driver}</td>
-            `;
-            tbody.appendChild(tr);
-        });
-        
-        addLog('System', `Hackathon Analytics Sync Complete: ${coins.length} tokens.`);
-        
-    } catch (e) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 2rem; color: #ff3e3e;">Failed to load insights: ${e.message}</td></tr>`;
-        addLog('Error', 'ML Insights fetch failed.');
-    }
+        addLog('System', `Intelligence Hub Synced: ${coins.length} tokens.`);
+    } catch (e) { console.error("ML Load Error:", e); addLog('Error', 'Intelligence Hub fetch failed.'); }
 }
 
-// -- Advanced ML Intelligence Rendering -----------------------------------------
+function renderHypeMatrix(coins) {
+    const data = [{
+        x: coins.map(c => c[1].sentiment_score || 0), y: coins.map(c => c[1].meme_viral_score || 0),
+        mode: 'markers+text', text: coins.map(c => c[0]), textposition: 'top center', marker: { size: 12, color: '#00e5ff' }, type: 'scatter'
+    }];
+    Plotly.newPlot('hype-matrix', data, { paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', font: { color: '#8892b0', size: 10 }, margin: { l: 40, r: 20, t: 20, b: 40 } }, { displayModeBar: false });
+}
+
+function updateSignalFeed(posts) {
+    const feed = document.getElementById('ml-social-feed'); if (!feed) return;
+    feed.innerHTML = '';
+    posts.slice(0, 20).forEach(post => {
+        const sentiment = post.sentiment_score || 0;
+        const sentClass = sentiment > 0.1 ? 'pos' : (sentiment < -0.1 ? 'neg' : '');
+        const item = document.createElement('div'); item.className = 'feed-item';
+        item.innerHTML = `<span class="feed-text">${post.text}</span><div class="feed-meta"><span>@${post.platform.toUpperCase()}</span><span class="${sentClass}">${sentiment > 0.1 ? 'BULLISH' : sentiment < -0.1 ? 'BEARISH' : 'NEUTRAL'}</span></div>`;
+        feed.appendChild(item);
+    });
+}
 
 function renderFeatureImportance() {
-    const chartDiv = document.getElementById('rf-feature-chart');
-    if (!chartDiv) return;
-
-    const data = [{
-        type: 'bar',
-        x: [0.38, 0.25, 0.18, 0.12, 0.07],
-        y: ['Sentiment', 'Mention Vol', 'Engagement', 'TrendSpike', 'Contextual'],
-        orientation: 'h',
-        marker: {
-            color: '#00e5ff',
-            opacity: 0.8
-        }
-    }];
-
-    const layout = {
-        paper_bgcolor: 'rgba(0,0,0,0)',
-        plot_bgcolor: 'rgba(0,0,0,0)',
-        font: { color: '#8892b0', family: 'Inter', size: 10 },
-        margin: { l: 80, r: 20, t: 10, b: 30 },
-        xaxis: { gridcolor: 'rgba(255,255,255,0.05)', zeroline: false },
-        yaxis: { gridcolor: 'rgba(255,255,255,0.05)' }
-    };
-
-    Plotly.newPlot(chartDiv, data, layout, {displayModeBar: false});
+    const data = [{ type: 'bar', x: [0.38, 0.25, 0.18, 0.12, 0.07], y: ['Sentiment', 'Volume', 'Engagement', 'Spikes', 'Topic'], orientation: 'h', marker: { color: '#00e5ff' } }];
+    Plotly.newPlot('rf-feature-chart', data, { paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', font: { color: '#8892b0', size: 10 }, margin: { l: 80, r: 20, t: 10, b: 30 } }, { displayModeBar: false });
 }
 
 function updateKeywordCloud(coinName, info) {
-    const cloud = document.getElementById('keyword-cloud');
-    const title = document.getElementById('keyword-title');
-    if (!cloud) return;
-
-    title.textContent = `Trending: $${coinName}`;
+    const cloud = document.getElementById('keyword-cloud'); if (!cloud || !info) return;
+    document.getElementById('keyword-title').textContent = `Trending: $${coinName}`;
     cloud.innerHTML = '';
-    
-    const keywords = info.top_keywords || ['bullish', 'moon', 'community', 'hype', 'gems'];
-    
-    keywords.forEach(word => {
-        const span = document.createElement('span');
-        span.className = 'word-pill';
-        if (word.toLowerCase().includes('moon') || word.toLowerCase().includes('ath')) {
-            span.classList.add('high-hype');
-        }
-        span.textContent = word;
-        cloud.appendChild(span);
+    (info.top_keywords || ['hype', 'moon', 'community']).forEach(word => {
+        const span = document.createElement('span'); span.className = 'word-pill';
+        if (word.toLowerCase().includes('moon')) span.classList.add('high-hype');
+        span.textContent = word; cloud.appendChild(span);
     });
 }
 
 function renderModelRadar() {
-    const radarDiv = document.getElementById('model-health-radar');
-    if (!radarDiv) return;
-
-    const data = [{
-        type: 'scatterpolar',
-        r: [92, 88, 90, 85, 89],
-        theta: ['Accuracy', 'Precision', 'Recall', 'F1-Score', 'Stability'],
-        fill: 'toself',
-        fillcolor: 'rgba(168, 85, 247, 0.3)',
-        line: { color: '#a855f7' }
-    }];
-
-    const layout = {
-        polar: {
-            bgcolor: 'rgba(0,0,0,0)',
-            radialaxis: { visible: true, range: [0, 100], gridcolor: 'rgba(255,255,255,0.1)' },
-            angularaxis: { gridcolor: 'rgba(255,255,255,0.1)' }
-        },
-        paper_bgcolor: 'rgba(0,0,0,0)',
-        font: { color: '#8892b0', size: 9 },
-        margin: { l: 40, r: 40, t: 20, b: 20 }
-    };
-
-    Plotly.newPlot(radarDiv, data, layout, {displayModeBar: false});
+    const data = [{ type: 'scatterpolar', r: [92, 88, 90, 85, 89], theta: ['Acc', 'Prec', 'Rec', 'F1', 'Stab'], fill: 'toself', fillcolor: 'rgba(168, 85, 247, 0.3)', line: { color: '#a855f7' } }];
+    Plotly.newPlot('model-health-radar', data, { polar: { bgcolor: 'rgba(0,0,0,0)', radialaxis: { visible: true, range: [0, 100], gridcolor: 'rgba(255,255,255,0.1)' } }, paper_bgcolor: 'rgba(0,0,0,0)', font: { color: '#8892b0', size: 9 }, margin: { l: 40, r: 40, t: 20, b: 20 } }, { displayModeBar: false });
 }
