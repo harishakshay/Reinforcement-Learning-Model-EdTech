@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HypeSense AI | Deep RL Meme Coin Trend Predictor</title>
+    <meta name="description" content="A DQN-powered autonomous agent that predicts meme coin trends (UP/DOWN/NEUTRAL) by analyzing social signals and market hype in real-time.">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+
+    <!-- NAVIGATION -->
+    <nav id="navbar">
+        <div class="nav-inner">
+            <a href="#" class="logo tab-link" data-tab="hero">HypeSense<span>AI</span></a>
+            <div class="nav-links">
+                <a href="#" class="tab-link active" data-tab="hero">Terminal</a>
+                <a href="#" class="tab-link" data-tab="demo-section">Live Analysis</a>
+                <a href="#" class="tab-link" data-tab="comparison-section">DQN vs ML</a>
+                <a href="#" class="tab-link" data-tab="architecture-section">Architecture</a>
+            </div>
+            <div class="nav-badges">
+                <span class="badge blue">Deep Q-Network</span>
+                <span class="badge purple">Social-ML Hybrid</span>
+            </div>
+        </div>
+    </nav>
+
+    <main class="tab-container">
+        <!-- HERO SECTION -->
+        <section id="hero" class="tab-pane active">
+            <div class="hero-bg-grid"></div>
+            <div class="hero-content">
+                <div class="hero-badge">Reinforcement Learning × Market Intelligence</div>
+                <h1>HypeSense: The RL Agent That <span class="gradient-text">Predicts the Pump</span></h1>
+                <p class="hero-sub">An autonomous agent that processes 10 high-impact social signals—sentiment, engagement, and cross-platform spikes—to predict market trends before they happen using Deep Reinforcement Learning.</p>
+                <div class="hero-stats">
+                    <div class="stat-card">
+                        <span class="stat-num">10</span>
+                        <span class="stat-label">Hype Features</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-num">DQN</span>
+                        <span class="stat-label">Neural Engine</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-num">3</span>
+                        <span class="stat-label">Trend Classes</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-num">∞</span>
+                        <span class="stat-label">Market Simulations</span>
+                    </div>
+                </div>
+                <div class="hero-actions">
+                    <a href="#" class="cta-btn tab-link" data-tab="demo-section">Launch Trend Terminal →</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- LIVE ANALYSIS SECTION (The 'Demo') -->
+        <section id="demo-section" class="tab-pane">
+            <div class="section-header">
+                <span class="section-tag">Trend Terminal</span>
+                <h2>Real-time Hype Analysis</h2>
+                <p>Observe the agent in the "Hype Terminal". Every step processes 10 signals to output a trend prediction with a confidence score.</p>
+            </div>
+
+            <div class="dashboard-grid">
+                <!-- Left: Signals -->
+                <div class="panel metrics-panel glass-card">
+                    <h3>💾 Live Signals (State)</h3>
+                    <div id="metrics-grid" class="metrics-grid"></div>
+                    <div class="feature-map">
+                        <h4>State Vector</h4>
+                        <pre id="state-vector">[0,0,0,0,0,0,0,0,0,0]</pre>
+                    </div>
+                </div>
+
+                <!-- Center: Prediction -->
+                <div class="panel main-panel">
+                    <div class="glass-card prediction-card active-card">
+                        <div class="card-header">
+                            <span class="step-pill" id="step-count">STEP 0</span>
+                            <span id="confidence-badge" class="badge">0% CONF</span>
+                        </div>
+                        <div id="prediction-display" class="prediction-display neutral">
+                            <span id="prediction-text">STANDBY</span>
+                        </div>
+                        <div class="reasoning-box">
+                            <div class="brain-icon">🧠</div>
+                            <div>
+                                <h4>Agent Decision Log</h4>
+                                <p id="explanation-text">Waiting for data simulator to broadcast...</p>
+                            </div>
+                        </div>
+                        <div class="controls">
+                            <button id="step-btn" class="primary-btn pulse-glow">Analyze Next Signal →</button>
+                        </div>
+                    </div>
+                    <div class="glass-card chart-card">
+                        <h3>📉 Simulated Market vs AI Predictions</h3>
+                        <div id="trend-chart" style="height: 250px;"></div>
+                    </div>
+                </div>
+
+                <!-- Right: Rewards -->
+                <div class="panel logs-panel glass-card">
+                    <h3>🔥 Neural Feedback</h3>
+                    <div id="reward-pulse" class="reward-pulse">0.00</div>
+                    <div class="reward-breakdown">
+                        <h4>"Secret Sauce" Analysis</h4>
+                        <ul id="reward-list"></ul>
+                    </div>
+                    <div class="timeline">
+                        <h4>Action History</h4>
+                        <div id="log-container" class="log-container"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- COMPARISON SECTION -->
+        <section id="comparison-section" class="tab-pane">
+            <div class="section-header">
+                <span class="section-tag">Live Benchmark</span>
+                <h2>Deep RL (DQN) vs Traditional ML</h2>
+                <p>Head-to-head benchmark on 500 identical market ticks. Same signals, same data — only the model architecture differs.</p>
+            </div>
+
+            <div class="compare-launch">
+                <button id="run-compare-btn" class="primary-btn pulse-glow">⚡ Run Live Benchmark (500 Steps)</button>
+            </div>
+
+            <!-- Loading -->
+            <div id="compare-loading" class="training-status hidden">
+                <div class="neural-pulse"><div class="pulse-core">⚔️</div></div>
+                <div class="status-text">
+                    <h3>Running Head-to-Head Benchmark...</h3>
+                    <p>Both agents are processing 500 market ticks on identical data</p>
+                </div>
+            </div>
+
+            <!-- Results (hidden until data arrives) -->
+            <div id="compare-results" class="hidden">
+                <div class="comparison-grid">
+                    <!-- TRADITIONAL ML CARD -->
+                    <div class="glass-card compare-card">
+                        <div class="compare-card-icon">📊</div>
+                        <h3>Traditional ML</h3>
+                        <div class="big-stat">
+                            <span class="big-num red" id="ml-acc-num">0%</span>
+                            <span class="big-label">Accuracy</span>
+                        </div>
+                        <div class="compare-details">
+                            <div class="compare-detail-row"><span>Correct Calls</span><span id="ml-correct">0</span></div>
+                            <div class="compare-detail-row"><span>Total Reward</span><span id="ml-reward">0</span></div>
+                            <div class="compare-detail-row"><span>Steps Tested</span><span id="ml-steps">0</span></div>
+                        </div>
+                    </div>
+
+                    <!-- VS CARD -->
+                    <div class="glass-card compare-card vs-card">
+                        <div class="vs-badge">VS</div>
+                        <div class="gain-display">
+                            <span class="gain-num" id="edge-gain-num">+0%</span>
+                            <span class="gain-label">Accuracy Edge</span>
+                        </div>
+                        <div class="gain-display" style="margin-top: 1.5rem;">
+                            <span class="gain-num reward-edge" id="reward-edge-num">+0</span>
+                            <span class="gain-label">Cumulative Reward Edge</span>
+                        </div>
+                    </div>
+
+                    <!-- DQN CARD -->
+                    <div class="glass-card compare-card">
+                        <div class="compare-card-icon">🧠</div>
+                        <h3>HypeSense DQN</h3>
+                        <div class="big-stat">
+                            <span class="big-num green" id="dqn-acc-num">0%</span>
+                            <span class="big-label">Accuracy</span>
+                        </div>
+                        <div class="compare-details">
+                            <div class="compare-detail-row"><span>Correct Calls</span><span id="dqn-correct">0</span></div>
+                            <div class="compare-detail-row"><span>Total Reward</span><span id="dqn-reward">0</span></div>
+                            <div class="compare-detail-row"><span>Steps Tested</span><span id="dqn-steps">0</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rolling Accuracy Chart -->
+                <div class="glass-card chart-card" style="max-width: 1000px; margin: 2rem auto;">
+                    <h3>📊 Rolling Accuracy Over Time (20-step window)</h3>
+                    <p style="color: var(--text-dim); font-size: 0.85rem; margin-bottom: 1rem;">Green = Deep RL (DQN) | Red = Traditional ML (Logistic Regression + Feature Eng.)</p>
+                    <div id="compare-chart" style="height: 300px;"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ARCHITECTURE SECTION -->
+        <section id="architecture-section" class="tab-pane">
+            <div class="section-header">
+                <h2>Behind the Hype</h2>
+                <p>The mathematical foundation of HypeSense AI.</p>
+            </div>
+            <div class="arch-grid">
+                <div class="glass-card arch-card">
+                    <h3>10-D Feature State</h3>
+                    <ul class="feat-list">
+                        <li>Sentiment (-1 to +1)</li>
+                        <li>Mention Growth Rate</li>
+                        <li>Cross-Platform Spikes</li>
+                        <li>Engagement Momentum</li>
+                        <li>Influencer Weight</li>
+                    </ul>
+                </div>
+                <div class="glass-card arch-card">
+                    <h3>DQN Architecture</h3>
+                    <p>Deep neural network with Experience Replay. 128 neurons per hidden layer, optimized via Adam.</p>
+                </div>
+                <div class="glass-card arch-card">
+                    <h3>Reward Logic</h3>
+                    <ul class="feat-list">
+                        <li>Correct Direction: +1.0</li>
+                        <li>Early Warning: +0.5</li>
+                        <li>High Conf Correction: +0.5</li>
+                        <li>Wrong Call: -1.0</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>Built for the AI Evolution Hackathon 2026 — DeepMind HypeSense Terminal</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
