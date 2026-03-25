@@ -32,7 +32,11 @@ async function triggerAnalysis() {
     showToast("Analyzing deep social signals across Twitter & Reddit...", "info");
     
     try {
-        const res = await fetch('/api/trigger-analysis', { method: 'POST' });
+        const res = await fetch('/api/trigger-analysis', { 
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({}) 
+        });
         const result = await res.json();
         
         if (result.status === 'success') {
@@ -137,7 +141,11 @@ async function initTerminal() {
     el.liveIndicator.textContent = 'CONNECTING...';
     el.liveIndicator.className = 'live-dot connecting';
     try {
-        const res = await fetch('/api/init', { method: 'POST' });
+        const res = await fetch('/api/init', { 
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+        });
         const data = await res.json();
         sessionInitialized = true;
         renderSignalBars(data.initial_state);
@@ -183,7 +191,11 @@ async function takeStep() {
     el.liveIndicator.className = 'live-dot connecting';
 
     try {
-        const res = await fetch('/api/step', { method: 'POST' });
+        const res = await fetch('/api/step', { 
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({}) 
+        });
         const data = await res.json();
 
         stepCount++;
@@ -347,7 +359,11 @@ if (runCompareBtn) {
         document.getElementById('compare-loading').classList.remove('hidden');
         document.getElementById('compare-results').classList.add('hidden');
         try {
-            const res = await fetch('/api/compare', { method: 'POST' });
+            const res = await fetch('/api/compare', { 
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({})
+            });
             const data = await res.json();
             document.getElementById('compare-loading').classList.add('hidden');
             document.getElementById('compare-results').classList.remove('hidden');

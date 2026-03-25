@@ -12,16 +12,16 @@ class TrendDataSimulator:
         self.generate_data()
 
     def generate_data(self):
-        # 1. Base Sentiment (-1 to +1)
-        sentiment = np.random.uniform(-0.2, 0.2, self.n_steps)
+        # 1. Base Sentiment (-1 to +1) - Increased variance
+        sentiment = np.random.uniform(-0.5, 0.5, self.n_steps)
         
         # 2. Mention Count (with occasional spikes)
         mentions = np.random.poisson(50, self.n_steps).astype(float)
         
         # 3. Price/Trend (The "Actual" label we want to predict)
-        # We'll create some "Pump" events
+        # We'll create some "Pump" events - Increased frequency (1 per 40 steps)
         price = np.ones(self.n_steps)
-        for _ in range(self.n_steps // 100):
+        for _ in range(self.n_steps // 40):
             start = np.random.randint(50, self.n_steps - 50)
             duration = np.random.randint(5, 15)
             # Increase sentiment and mentions before price pump

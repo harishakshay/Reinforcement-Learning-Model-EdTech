@@ -77,12 +77,16 @@ ml_acc_history = []
 def take_step():
     """Take a single step in the simulation for both models."""
     data = request.get_json()
-    action = data.get("action", 1)
-    confidence = data.get("confidence", 0.5)
-    
     agent = get_agent()
     environment = get_env()
     state = environment.state
+    
+    # If no action provided in request, let the agent choose
+    if "action" not in data:
+        action, confidence = agent.select_action(state, training=False)
+    else:
+        action = data.get("action", 1)
+        confidence = data.get("confidence", 0.5)
     
     # 1. RL Step (Agent is already being stepped by frontend action selection)
     next_state, reward, done, info = environment.step(action, confidence=confidence)
