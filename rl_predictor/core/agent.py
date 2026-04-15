@@ -109,7 +109,7 @@ class TrendPredictorAgent:
     ) -> Dict:
         """Generate a user-facing explanation aligned with discovery-fatigue framing."""
         action_labels = ["Diversify Feed", "Stay Balanced", "Deepen Interest"]
-        action_classes = ["downward", "neutral", "upward"]
+        action_classes = ["down", "neutral", "up"]
         chosen = action_labels[action]
 
         feature_names = [
