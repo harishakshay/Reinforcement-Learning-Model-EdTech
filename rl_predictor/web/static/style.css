@@ -26,49 +26,231 @@ nav {
     position: sticky;
     top: 0;
     z-index: 1000;
-    background: var(--nav-bg);
+    padding: 0.9rem 1.2rem 0;
+    background:
+        radial-gradient(circle at top left, rgba(0, 229, 255, 0.10), transparent 28%),
+        radial-gradient(circle at top right, rgba(0, 255, 136, 0.12), transparent 24%),
+        var(--nav-bg);
     backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border);
+}
+
+nav::after {
+    content: "";
+    display: block;
+    margin-top: 0.9rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .nav-inner {
     max-width: 1400px;
     margin: 0 auto;
-    padding: 1.2rem 2rem;
-    display: flex;
-    justify-content: space-between;
+    padding: 1rem 1.1rem;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 1rem;
     align-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    background:
+        linear-gradient(135deg, rgba(8, 12, 18, 0.92), rgba(12, 14, 20, 0.82)),
+        rgba(6, 8, 12, 0.88);
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.28);
+}
+
+.nav-brand {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
 }
 
 .logo {
+    display: inline-flex;
+    align-items: baseline;
     font-size: 1.6rem;
     font-weight: 900;
     text-decoration: none;
     color: #fff;
     letter-spacing: -1px;
 }
+
+.logo.active,
+.logo:hover {
+    color: #fff;
+}
+
 .logo span { color: var(--primary); }
 
-.nav-links { display: flex; gap: 2rem; }
-.nav-links a {
-    color: var(--text-dim);
-    text-decoration: none;
-    font-weight: 500;
-    font-size: 0.95rem;
-    transition: all 0.2s;
+.nav-brand-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.66rem;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: rgba(148, 163, 184, 0.92);
 }
-.nav-links a:hover, .nav-links a.active { color: var(--primary); }
 
-.nav-badges { display: flex; gap: 0.5rem; }
+.nav-links {
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.45rem;
+    align-items: stretch;
+    width: min(100%, 940px);
+    margin-inline: auto;
+    padding: 0.45rem;
+    border-radius: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02)),
+        rgba(255, 255, 255, 0.02);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    justify-self: center;
+}
+
+.nav-links li {
+    display: flex;
+    min-width: 0;
+}
+
+.nav-links a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 50px;
+    padding: 0.8rem 0.95rem;
+    border-radius: 16px;
+    border: 1px solid transparent;
+    color: #cbd5e1;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 0.86rem;
+    letter-spacing: 0.01em;
+    line-height: 1.25;
+    text-align: center;
+    transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.nav-links a:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.08);
+    transform: translateY(-1px);
+}
+
+.nav-links a.active {
+    color: #04120d;
+    background: linear-gradient(135deg, #00ff88 0%, #7cffd1 42%, #00e5ff 100%);
+    border-color: rgba(125, 255, 220, 0.55);
+    box-shadow: 0 12px 24px rgba(0, 229, 255, 0.18);
+}
+
+.nav-badges {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
 
 .badge {
-    padding: 0.2rem 0.6rem;
-    border-radius: 4px;
-    font-size: 0.7rem;
-    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.55rem 0.85rem;
+    border-radius: 14px;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
-.badge.blue { background: rgba(0, 229, 255, 0.15); color: var(--secondary); border: 1px solid rgba(0,229,255,0.3); }
-.badge.purple { background: rgba(255, 0, 255, 0.15); color: var(--accent); border: 1px solid rgba(255,0,255,0.3); }
+
+.badge::before {
+    content: "";
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 999px;
+    background: currentColor;
+    box-shadow: 0 0 12px currentColor;
+}
+
+.badge.cyan {
+    color: var(--secondary);
+    background: rgba(0, 229, 255, 0.12);
+    border-color: rgba(0, 229, 255, 0.24);
+}
+
+.badge.gold {
+    color: #ffbf5f;
+    background: rgba(255, 191, 95, 0.12);
+    border-color: rgba(255, 191, 95, 0.24);
+}
+
+@media (max-width: 1240px) {
+    .nav-inner {
+        grid-template-columns: 1fr;
+    }
+
+    .nav-links {
+        width: 100%;
+        justify-self: stretch;
+    }
+
+    .nav-badges {
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 760px) {
+    nav {
+        padding: 0.7rem 0.7rem 0;
+    }
+
+    nav::after {
+        margin-top: 0.7rem;
+    }
+
+    .nav-inner {
+        padding: 0.9rem;
+        border-radius: 20px;
+    }
+
+    .logo {
+        font-size: 1.35rem;
+    }
+
+    .nav-brand-tag {
+        letter-spacing: 0.12em;
+        line-height: 1.4;
+    }
+
+    .nav-links {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        border-radius: 20px;
+    }
+
+    .nav-links a {
+        min-height: 48px;
+    }
+
+    .nav-badges {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+
+    .badge {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 520px) {
+    .nav-links {
+        grid-template-columns: 1fr;
+    }
+}
 
 /* ── TABS ── */
 .tab-pane { display: none; }
@@ -114,6 +296,10 @@ h1 {
     letter-spacing: -2px;
     line-height: 1.1;
     margin-bottom: 1.5rem;
+    max-width: 11ch;
+    margin-left: auto;
+    margin-right: auto;
+    text-wrap: balance;
 }
 
 .gradient-text {
@@ -654,6 +840,294 @@ code {
 }
 .gain-num.reward-edge { font-size: 1.8rem; color: var(--secondary); }
 .gain-label { font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; }
+
+.journey-top-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 1.2rem;
+    max-width: 1400px;
+    margin: 0 auto 1.2rem;
+    padding: 0 2rem;
+}
+
+.journey-persona-card,
+.journey-control-card,
+.journey-lane {
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.015)),
+        var(--card-bg);
+}
+
+.journey-meta-row,
+.journey-control-head,
+.journey-lane-head,
+.journey-current-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.journey-card-tag,
+.journey-lane-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--secondary);
+    background: rgba(0, 229, 255, 0.12);
+    border: 1px solid rgba(0, 229, 255, 0.2);
+}
+
+.journey-lane-tag.danger {
+    color: #ff8c82;
+    background: rgba(255, 99, 71, 0.12);
+    border-color: rgba(255, 99, 71, 0.22);
+}
+
+.journey-lane-tag.success {
+    color: var(--primary);
+    background: rgba(0, 255, 136, 0.12);
+    border-color: rgba(0, 255, 136, 0.22);
+}
+
+.journey-sync-pill,
+.journey-policy-pill,
+.journey-current-tag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #dbe7f5;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.journey-sync-pill.accent {
+    color: #ffbf5f;
+    border-color: rgba(255, 191, 95, 0.22);
+    background: rgba(255, 191, 95, 0.12);
+}
+
+.journey-policy-pill.success,
+.journey-current-tag.success {
+    color: #03130c;
+    background: linear-gradient(135deg, #00ff88 0%, #83ffd7 100%);
+    border-color: rgba(0, 255, 136, 0.28);
+}
+
+.journey-current-tag.baseline {
+    color: #ffb3a8;
+    background: rgba(255, 99, 71, 0.12);
+    border-color: rgba(255, 99, 71, 0.18);
+}
+
+.journey-persona-card h3,
+.journey-control-card h3,
+.journey-lane-head h3 {
+    margin-top: 1rem;
+    margin-bottom: 0.6rem;
+    font-size: 1.45rem;
+}
+
+.journey-persona-card p,
+.journey-narration,
+.journey-current-reason {
+    color: var(--text-dim);
+}
+
+.journey-persona-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.85rem;
+    margin-top: 1.2rem;
+}
+
+.journey-persona-detail {
+    padding: 0.9rem 1rem;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.journey-persona-detail.full {
+    grid-column: 1 / -1;
+}
+
+.journey-persona-detail span,
+.journey-delta-card span,
+.journey-metric-card span,
+.journey-trail-step,
+.journey-trail-body span {
+    display: block;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+}
+
+.journey-persona-detail strong,
+.journey-delta-card strong,
+.journey-metric-card strong,
+.journey-current-card h4,
+.journey-trail-body strong {
+    display: block;
+    margin-top: 0.3rem;
+    color: var(--text);
+}
+
+.journey-delta-grid,
+.journey-metric-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.8rem;
+}
+
+.journey-delta-grid {
+    margin: 1rem 0 1.1rem;
+}
+
+.journey-delta-card,
+.journey-metric-card {
+    padding: 0.9rem;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.journey-delta-card strong {
+    font-size: 1.15rem;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.journey-delta-card strong.good {
+    color: var(--primary);
+}
+
+.journey-delta-card strong.bad {
+    color: #ff7b72;
+}
+
+.journey-delta-card strong.neutral {
+    color: #dbe7f5;
+}
+
+.journey-lanes {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.2rem;
+    max-width: 1400px;
+    margin: 0 auto 2.4rem;
+    padding: 0 2rem;
+}
+
+.journey-lane {
+    padding: 1.5rem;
+    border-radius: 18px;
+}
+
+.journey-lane.baseline {
+    border-color: rgba(255, 99, 71, 0.14);
+}
+
+.journey-lane.rl {
+    border-color: rgba(0, 255, 136, 0.14);
+}
+
+.journey-current-card {
+    margin: 1rem 0;
+    padding: 1.1rem;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.journey-current-card h4 {
+    font-size: 1.25rem;
+    line-height: 1.3;
+}
+
+.journey-current-byline {
+    margin-top: 0.4rem;
+    color: #d8e0ea;
+    font-size: 0.9rem;
+}
+
+.journey-current-reason {
+    margin-top: 0.8rem;
+    line-height: 1.6;
+}
+
+.journey-trail-block {
+    margin-top: 1rem;
+}
+
+.journey-trail-title {
+    margin-bottom: 0.7rem;
+    font-size: 0.76rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+}
+
+.journey-trail-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.journey-trail-item {
+    display: grid;
+    grid-template-columns: 68px 1fr;
+    gap: 0.8rem;
+    align-items: start;
+    padding: 0.85rem 0.9rem;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.journey-trail-item.baseline {
+    border-left: 3px solid rgba(255, 99, 71, 0.48);
+}
+
+.journey-trail-item.success {
+    border-left: 3px solid rgba(0, 255, 136, 0.5);
+}
+
+.journey-trail-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.journey-trail-tag {
+    display: inline-flex;
+    align-self: flex-start;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.62rem;
+    color: var(--secondary);
+    background: rgba(0, 229, 255, 0.08);
+    border: 1px solid rgba(0, 229, 255, 0.14);
+}
+
+.journey-trail-empty {
+    padding: 1rem;
+    border-radius: 14px;
+    color: var(--text-dim);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px dashed rgba(255, 255, 255, 0.08);
+}
 
 /* ── LOADING ── */
 .training-status { text-align: center; padding: 3rem; }
@@ -2035,6 +2509,16 @@ body.chaos-active {
 }
 
 @media (max-width: 1100px) {
+    .journey-top-grid,
+    .journey-lanes {
+        grid-template-columns: 1fr;
+    }
+
+    .journey-delta-grid,
+    .journey-metric-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .graph-kpi-grid {
         grid-template-columns: repeat(2, minmax(120px, 1fr));
     }
@@ -2042,6 +2526,67 @@ body.chaos-active {
         grid-template-columns: 1fr;
     }
 }
+
+@media (max-width: 700px) {
+    .journey-top-grid,
+    .journey-lanes {
+        padding: 0 1rem;
+    }
+
+    .journey-persona-grid,
+    .journey-delta-grid,
+    .journey-metric-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .journey-meta-row,
+    .journey-control-head,
+    .journey-lane-head,
+    .journey-current-meta {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .journey-trail-item {
+        grid-template-columns: 1fr;
+    }
+}
+
+.deck-grid {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 2rem;
+    align-items: center;
+}
+
+.sabotage-control label {
+    display: block; font-size: 0.65rem; font-weight: 800; color: var(--text-dim); margin-bottom: 0.75rem; letter-spacing: 0.2em;
+}
+
+.btn-group { display: flex; gap: 0.5rem; }
+
+.deck-btn {
+    flex: 1;
+    padding: 0.75rem;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.03);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.deck-btn.dump:hover { background: rgba(255, 23, 68, 0.2); border-color: #ff1744; }
+.deck-btn.news:hover { background: rgba(255, 152, 0, 0.2); border-color: #ff9800; }
+.deck-btn.fud:hover { background: rgba(255, 235, 59, 0.2); border-color: #ffeb3b; }
+
+/* Matrix Ripple & Crash Effects */
+.ml-terminal.crashed {
+    animation: matrix-ripple 0.2s infinite;
+}
+
+@keyframes matrix-ripple {
 
 .deck-grid {
     display: grid;

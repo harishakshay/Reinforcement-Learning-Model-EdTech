@@ -35,6 +35,7 @@ document.addEventListener("click", (e) => {
     if (activePane) activePane.classList.add("active");
 
     if (tabId === "demo-section") initTerminal();
+    if (tabId === "journey-section") initJourney();
     if (tabId === "graph-section") initGraphLab();
 });
 
@@ -372,6 +373,244 @@ if (el.stepBtn) el.stepBtn.onclick = takeStep;
 if (el.autoBtn) el.autoBtn.onclick = () => autoRunInterval ? stopAutoRun() : startAutoRun();
 if (el.resetBtn) el.resetBtn.onclick = resetSession;
 setupExplorationControl();
+
+// Feed Journey
+let journeyInitialized = false;
+let journeyAutoInterval = null;
+let journeyExplorationLevel = 0.55;
+
+const journeyEl = {
+    personaName: document.getElementById("journey-persona-name"),
+    personaSummary: document.getElementById("journey-persona-summary"),
+    coreInterests: document.getElementById("journey-core-interests"),
+    fatigueSignal: document.getElementById("journey-fatigue-signal"),
+    personaIntent: document.getElementById("journey-persona-intent"),
+    stepIndicator: document.getElementById("journey-step-indicator"),
+    narration: document.getElementById("journey-narration"),
+    deltaBubble: document.getElementById("journey-delta-bubble"),
+    deltaDiversity: document.getElementById("journey-delta-diversity"),
+    deltaRepeat: document.getElementById("journey-delta-repeat"),
+    deltaSatisfaction: document.getElementById("journey-delta-satisfaction"),
+    explorationSlider: document.getElementById("journey-exploration-level"),
+    explorationValue: document.getElementById("journey-exploration-value"),
+    explorationLabel: document.getElementById("journey-exploration-label"),
+    stepBtn: document.getElementById("journey-step-btn"),
+    autoBtn: document.getElementById("journey-auto-btn"),
+    resetBtn: document.getElementById("journey-reset-btn"),
+    baselinePolicy: document.getElementById("journey-baseline-policy"),
+    baselineTag: document.getElementById("journey-baseline-tag"),
+    baselineTitle: document.getElementById("journey-baseline-title"),
+    baselineTopic: document.getElementById("journey-baseline-topic"),
+    baselineCreator: document.getElementById("journey-baseline-creator"),
+    baselineReason: document.getElementById("journey-baseline-reason"),
+    baselineRepeat: document.getElementById("journey-baseline-repeat"),
+    baselineDiversity: document.getElementById("journey-baseline-diversity"),
+    baselineBubble: document.getElementById("journey-baseline-bubble"),
+    baselineSatisfaction: document.getElementById("journey-baseline-satisfaction"),
+    baselineTrail: document.getElementById("journey-baseline-trail"),
+    rlPolicy: document.getElementById("journey-rl-policy"),
+    rlTag: document.getElementById("journey-rl-tag"),
+    rlTitle: document.getElementById("journey-rl-title"),
+    rlTopic: document.getElementById("journey-rl-topic"),
+    rlCreator: document.getElementById("journey-rl-creator"),
+    rlReason: document.getElementById("journey-rl-reason"),
+    rlRepeat: document.getElementById("journey-rl-repeat"),
+    rlDiversity: document.getElementById("journey-rl-diversity"),
+    rlBubble: document.getElementById("journey-rl-bubble"),
+    rlSatisfaction: document.getElementById("journey-rl-satisfaction"),
+    rlTrail: document.getElementById("journey-rl-trail")
+};
+
+function setupJourneyControls() {
+    if (!journeyEl.explorationSlider) return;
+    const raw = Number(journeyEl.explorationSlider.value || 55);
+    journeyExplorationLevel = raw / 100;
+    journeyEl.explorationValue.textContent = String(raw);
+    journeyEl.explorationLabel.textContent = explorationModeLabel(journeyExplorationLevel);
+
+    journeyEl.explorationSlider.addEventListener("input", () => {
+        const value = Number(journeyEl.explorationSlider.value || 55);
+        journeyExplorationLevel = value / 100;
+        journeyEl.explorationValue.textContent = String(value);
+        journeyEl.explorationLabel.textContent = explorationModeLabel(journeyExplorationLevel);
+    });
+
+    if (journeyEl.stepBtn) journeyEl.stepBtn.onclick = stepJourney;
+    if (journeyEl.autoBtn) journeyEl.autoBtn.onclick = () => journeyAutoInterval ? stopJourneyAuto() : startJourneyAuto();
+    if (journeyEl.resetBtn) journeyEl.resetBtn.onclick = resetJourney;
+}
+
+async function initJourney(forceReset = false) {
+    if (journeyInitialized && !forceReset) return;
+    try {
+        const res = await fetch("/api/journey/init", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ reset: forceReset })
+        });
+        const data = await res.json();
+        journeyInitialized = true;
+        renderJourneyState(data);
+    } catch (e) {
+        if (journeyEl.narration) journeyEl.narration.textContent = "Unable to initialize the feed journey right now.";
+    }
+}
+
+async function stepJourney() {
+    if (!journeyInitialized) await initJourney();
+    if (journeyEl.stepBtn) journeyEl.stepBtn.disabled = true;
+    try {
+        const res = await fetch("/api/journey/step", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ exploration_level: journeyExplorationLevel })
+        });
+        const data = await res.json();
+        renderJourneyState(data);
+        if (data.done) stopJourneyAuto();
+    } catch (e) {
+        if (journeyEl.narration) journeyEl.narration.textContent = "The feed journey could not advance.";
+        stopJourneyAuto();
+    }
+    if (journeyEl.stepBtn) journeyEl.stepBtn.disabled = false;
+}
+
+function startJourneyAuto() {
+    if (journeyAutoInterval) return;
+    if (journeyEl.autoBtn) {
+        journeyEl.autoBtn.textContent = "Stop Auto";
+        journeyEl.autoBtn.classList.add("active");
+    }
+    journeyAutoInterval = setInterval(async () => { await stepJourney(); }, 950);
+}
+
+function stopJourneyAuto() {
+    if (journeyAutoInterval) {
+        clearInterval(journeyAutoInterval);
+        journeyAutoInterval = null;
+    }
+    if (journeyEl.autoBtn) {
+        journeyEl.autoBtn.textContent = "Auto Run";
+        journeyEl.autoBtn.classList.remove("active");
+    }
+}
+
+async function resetJourney() {
+    stopJourneyAuto();
+    journeyInitialized = false;
+    await initJourney(true);
+}
+
+function formatJourneyDelta(value) {
+    const sign = value > 0 ? "+" : "";
+    return `${sign}${Number(value || 0).toFixed(1)}`;
+}
+
+function applyJourneyDeltaTone(node, value) {
+    if (!node) return;
+    node.classList.remove("good", "bad", "neutral");
+    if (value > 0.05) node.classList.add("good");
+    else if (value < -0.05) node.classList.add("bad");
+    else node.classList.add("neutral");
+}
+
+function renderJourneyTrail(container, trail, toneClass) {
+    if (!container) return;
+    if (!trail || trail.length === 0) {
+        container.innerHTML = '<div class="journey-trail-empty">No recommendations yet.</div>';
+        return;
+    }
+    container.innerHTML = trail.map((item) => `
+        <div class="journey-trail-item ${toneClass}">
+            <div class="journey-trail-step">Step ${item.step}</div>
+            <div class="journey-trail-body">
+                <span class="journey-trail-tag">${item.tag}</span>
+                <strong>${item.title}</strong>
+                <span>${item.topic_label} · ${item.creator_name}</span>
+            </div>
+        </div>
+    `).join("");
+}
+
+function renderJourneyLane(lane, refs, toneClass) {
+    if (!lane) return;
+    const current = lane.current_item || {};
+    refs.policy.textContent = current.policy_label || lane.lane_label || "-";
+    refs.tag.textContent = current.tag || "Waiting";
+    refs.tag.className = `journey-current-tag ${toneClass}`;
+    refs.title.textContent = current.title || "Waiting for first feed step.";
+    refs.topic.textContent = current.topic_label || "-";
+    refs.creator.textContent = current.creator_name || "-";
+    refs.reason.textContent = current.reason || "Run the journey to compare how each lane evolves.";
+
+    const metrics = lane.metrics || {};
+    refs.repeat.textContent = `${Number(metrics.repeat_rate || 0).toFixed(1)}%`;
+    refs.diversity.textContent = `${Number(metrics.topic_diversity || 0).toFixed(1)}%`;
+    refs.bubble.textContent = `${Number(metrics.bubble_risk || 0).toFixed(1)}%`;
+    refs.satisfaction.textContent = `${Number(metrics.satisfaction || 0).toFixed(1)}%`;
+
+    renderJourneyTrail(refs.trail, lane.trail, toneClass);
+}
+
+function renderJourneyState(data) {
+    if (!data) return;
+    const persona = data.persona || {};
+    if (journeyEl.personaName) journeyEl.personaName.textContent = persona.name || "Maya";
+    if (journeyEl.personaSummary) journeyEl.personaSummary.textContent = persona.summary || "";
+    if (journeyEl.coreInterests) journeyEl.coreInterests.textContent = (persona.core_interests || []).join(", ");
+    if (journeyEl.fatigueSignal) journeyEl.fatigueSignal.textContent = persona.fatigue_signal || "";
+    if (journeyEl.personaIntent) journeyEl.personaIntent.textContent = persona.intent || "";
+    if (journeyEl.stepIndicator) journeyEl.stepIndicator.textContent = `STEP ${data.step || 0} / ${data.max_steps || 12}`;
+    if (journeyEl.narration) journeyEl.narration.textContent = data.narration || "";
+
+    const delta = data.delta_summary || {};
+    if (journeyEl.deltaBubble) {
+        journeyEl.deltaBubble.textContent = formatJourneyDelta(delta.bubble_risk_gap);
+        applyJourneyDeltaTone(journeyEl.deltaBubble, delta.bubble_risk_gap);
+    }
+    if (journeyEl.deltaDiversity) {
+        journeyEl.deltaDiversity.textContent = formatJourneyDelta(delta.diversity_gap);
+        applyJourneyDeltaTone(journeyEl.deltaDiversity, delta.diversity_gap);
+    }
+    if (journeyEl.deltaRepeat) {
+        journeyEl.deltaRepeat.textContent = formatJourneyDelta(delta.repeat_gap);
+        applyJourneyDeltaTone(journeyEl.deltaRepeat, delta.repeat_gap);
+    }
+    if (journeyEl.deltaSatisfaction) {
+        journeyEl.deltaSatisfaction.textContent = formatJourneyDelta(delta.satisfaction_gap);
+        applyJourneyDeltaTone(journeyEl.deltaSatisfaction, delta.satisfaction_gap);
+    }
+
+    renderJourneyLane(data.baseline, {
+        policy: journeyEl.baselinePolicy,
+        tag: journeyEl.baselineTag,
+        title: journeyEl.baselineTitle,
+        topic: journeyEl.baselineTopic,
+        creator: journeyEl.baselineCreator,
+        reason: journeyEl.baselineReason,
+        repeat: journeyEl.baselineRepeat,
+        diversity: journeyEl.baselineDiversity,
+        bubble: journeyEl.baselineBubble,
+        satisfaction: journeyEl.baselineSatisfaction,
+        trail: journeyEl.baselineTrail
+    }, "baseline");
+
+    renderJourneyLane(data.rl_guided, {
+        policy: journeyEl.rlPolicy,
+        tag: journeyEl.rlTag,
+        title: journeyEl.rlTitle,
+        topic: journeyEl.rlTopic,
+        creator: journeyEl.rlCreator,
+        reason: journeyEl.rlReason,
+        repeat: journeyEl.rlRepeat,
+        diversity: journeyEl.rlDiversity,
+        bubble: journeyEl.rlBubble,
+        satisfaction: journeyEl.rlSatisfaction,
+        trail: journeyEl.rlTrail
+    }, "success");
+}
+
+setupJourneyControls();
 
 const runCompareBtn = document.getElementById("run-compare-btn");
 if (runCompareBtn) {

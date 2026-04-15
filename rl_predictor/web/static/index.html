@@ -15,16 +15,20 @@
 
     <nav id="navbar">
         <div class="nav-inner">
-            <a href="#" class="logo tab-link active" data-tab="hero">DiscoverSense<span>AI</span></a>
-            <ul class="nav-links">
+            <div class="nav-brand">
+                <a href="#" class="logo tab-link active" data-tab="hero">DiscoverSense<span>AI</span></a>
+                <span class="nav-brand-tag">Intentional Discovery Simulator</span>
+            </div>
+            <ul class="nav-links" aria-label="Primary sections">
                 <li><a href="#" class="tab-link" data-tab="demo-section">Discovery Terminal</a></li>
+                <li><a href="#" class="tab-link" data-tab="journey-section">Feed Journey</a></li>
                 <li><a href="#" class="tab-link" data-tab="comparison-section">Policy Benchmark</a></li>
                 <li><a href="#" class="tab-link" data-tab="graph-section">Graph Discovery Lab</a></li>
                 <li><a href="#" class="tab-link" data-tab="architecture-section">How It Works</a></li>
             </ul>
             <div class="nav-badges">
-                <span class="badge blue">Deep Q-Network</span>
-                <span class="badge purple">Algorithm Fatigue Hackathon</span>
+                <span class="badge cyan">Deep Q-Network</span>
+                <span class="badge gold">Algorithm Fatigue Hackathon</span>
             </div>
         </div>
     </nav>
@@ -34,9 +38,8 @@
             <div class="hero-bg-grid"></div>
             <div class="hero-content">
                 <div class="hero-badge">Reinforcement Learning x Intentional Discovery</div>
-                <h1>Break Content Bubbles With <span class="gradient-text">
-                    User-Guided RL</span></h1>
-                <p class="hero-sub">This simulation models algorithm fatigue and shows how an RL policy can balance personalization with meaningful exploration.</p>
+                <h1>Break Filter Bubbles.<br><span class="gradient-text">Steer Discovery With RL.</span></h1>
+                <p class="hero-sub">A reinforcement-learning showcase for healthier recommendations, intentional exploration, and less algorithm fatigue.</p>
                 <div class="hero-stats">
                     <div class="stat-card">
                         <span class="stat-num">10</span>
@@ -165,6 +168,164 @@
                     <div class="log-section">
                         <h4 class="sub-label">Decision Log</h4>
                         <div id="log-container" class="log-container"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="journey-section" class="tab-pane">
+            <div class="section-header">
+                <span class="section-tag">Feed Journey</span>
+                <h2>Same User. Two Very Different Feeds.</h2>
+                <p>Watch an engagement-only feed narrow into repetition while the RL-guided feed keeps personalization and reopens meaningful discovery.</p>
+            </div>
+
+            <div class="journey-top-grid">
+                <div class="glass-card journey-persona-card">
+                    <div class="journey-meta-row">
+                        <span class="journey-card-tag">Shared Persona</span>
+                        <span class="journey-sync-pill">Same user, same starting point</span>
+                    </div>
+                    <h3 id="journey-persona-name">Maya</h3>
+                    <p id="journey-persona-summary">A creative technologist trying to escape repetitive AI productivity content without losing relevance.</p>
+                    <div class="journey-persona-grid">
+                        <div class="journey-persona-detail">
+                            <span>Core Interests</span>
+                            <strong id="journey-core-interests">AI Tools, Design Systems, Creative Coding</strong>
+                        </div>
+                        <div class="journey-persona-detail">
+                            <span>Current Fatigue</span>
+                            <strong id="journey-fatigue-signal">Too many near-identical AI clips.</strong>
+                        </div>
+                        <div class="journey-persona-detail full">
+                            <span>Session Goal</span>
+                            <strong id="journey-persona-intent">Stay personalized while reopening adjacent discovery.</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card journey-control-card">
+                    <div class="journey-control-head">
+                        <div>
+                            <span class="journey-card-tag">Live Comparison</span>
+                            <h3 id="journey-step-indicator">STEP 0 / 12</h3>
+                        </div>
+                        <span class="journey-sync-pill accent">Judge View</span>
+                    </div>
+                    <p id="journey-narration" class="journey-narration">Run the journey step-by-step to watch the same user split into two very different feed experiences.</p>
+                    <div class="journey-delta-grid">
+                        <div class="journey-delta-card">
+                            <span>Bubble Risk Gap</span>
+                            <strong id="journey-delta-bubble">0.0</strong>
+                        </div>
+                        <div class="journey-delta-card">
+                            <span>Diversity Gap</span>
+                            <strong id="journey-delta-diversity">0.0</strong>
+                        </div>
+                        <div class="journey-delta-card">
+                            <span>Repeat Gap</span>
+                            <strong id="journey-delta-repeat">0.0</strong>
+                        </div>
+                        <div class="journey-delta-card">
+                            <span>Satisfaction Gap</span>
+                            <strong id="journey-delta-satisfaction">0.0</strong>
+                        </div>
+                    </div>
+                    <div class="state-vec-box">
+                        <span class="state-vec-label">User Agency Level: <strong id="journey-exploration-label">Balanced</strong> (<span id="journey-exploration-value">55</span>%)</span>
+                        <input id="journey-exploration-level" type="range" min="0" max="100" value="55">
+                        <small>Higher values let the RL lane push farther into adjacent interests without dropping relevance.</small>
+                    </div>
+                    <div class="controls">
+                        <button id="journey-step-btn" class="primary-btn pulse-glow">Next Feed Step</button>
+                        <button id="journey-auto-btn" class="sec-btn">Auto Run</button>
+                        <button id="journey-reset-btn" class="ghost-btn">Reset Journey</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="journey-lanes">
+                <div class="glass-card journey-lane baseline">
+                    <div class="journey-lane-head">
+                        <div>
+                            <span class="journey-lane-tag danger">Engagement-Only Feed</span>
+                            <h3>What a sticky algorithm keeps serving</h3>
+                        </div>
+                        <span id="journey-baseline-policy" class="journey-policy-pill">Engagement Maximizer</span>
+                    </div>
+                    <div class="journey-current-card">
+                        <div class="journey-current-meta">
+                            <span id="journey-baseline-tag" class="journey-current-tag">Waiting</span>
+                        </div>
+                        <h4 id="journey-baseline-title">Waiting for first feed step.</h4>
+                        <p class="journey-current-byline"><span id="journey-baseline-topic">-</span> by <span id="journey-baseline-creator">-</span></p>
+                        <p id="journey-baseline-reason" class="journey-current-reason">The baseline lane will show how engagement-driven ranking narrows the feed over time.</p>
+                    </div>
+                    <div class="journey-metric-grid">
+                        <div class="journey-metric-card">
+                            <span>Repeat Rate</span>
+                            <strong id="journey-baseline-repeat">0.0%</strong>
+                        </div>
+                        <div class="journey-metric-card">
+                            <span>Topic Diversity</span>
+                            <strong id="journey-baseline-diversity">0.0%</strong>
+                        </div>
+                        <div class="journey-metric-card">
+                            <span>Bubble Risk</span>
+                            <strong id="journey-baseline-bubble">0.0%</strong>
+                        </div>
+                        <div class="journey-metric-card">
+                            <span>Satisfaction</span>
+                            <strong id="journey-baseline-satisfaction">0.0%</strong>
+                        </div>
+                    </div>
+                    <div class="journey-trail-block">
+                        <div class="journey-trail-title">Recent Feed Trail</div>
+                        <div id="journey-baseline-trail" class="journey-trail-list">
+                            <div class="journey-trail-empty">No recommendations yet.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card journey-lane rl">
+                    <div class="journey-lane-head">
+                        <div>
+                            <span class="journey-lane-tag success">RL Discovery Feed</span>
+                            <h3>What intentional discovery feels like</h3>
+                        </div>
+                        <span id="journey-rl-policy" class="journey-policy-pill success">Stay Balanced</span>
+                    </div>
+                    <div class="journey-current-card">
+                        <div class="journey-current-meta">
+                            <span id="journey-rl-tag" class="journey-current-tag success">Waiting</span>
+                        </div>
+                        <h4 id="journey-rl-title">Waiting for first feed step.</h4>
+                        <p class="journey-current-byline"><span id="journey-rl-topic">-</span> by <span id="journey-rl-creator">-</span></p>
+                        <p id="journey-rl-reason" class="journey-current-reason">The RL lane will keep the session relevant while reopening adjacent interests.</p>
+                    </div>
+                    <div class="journey-metric-grid">
+                        <div class="journey-metric-card">
+                            <span>Repeat Rate</span>
+                            <strong id="journey-rl-repeat">0.0%</strong>
+                        </div>
+                        <div class="journey-metric-card">
+                            <span>Topic Diversity</span>
+                            <strong id="journey-rl-diversity">0.0%</strong>
+                        </div>
+                        <div class="journey-metric-card">
+                            <span>Bubble Risk</span>
+                            <strong id="journey-rl-bubble">0.0%</strong>
+                        </div>
+                        <div class="journey-metric-card">
+                            <span>Satisfaction</span>
+                            <strong id="journey-rl-satisfaction">0.0%</strong>
+                        </div>
+                    </div>
+                    <div class="journey-trail-block">
+                        <div class="journey-trail-title">Recent Feed Trail</div>
+                        <div id="journey-rl-trail" class="journey-trail-list">
+                            <div class="journey-trail-empty">No recommendations yet.</div>
+                        </div>
                     </div>
                 </div>
             </div>

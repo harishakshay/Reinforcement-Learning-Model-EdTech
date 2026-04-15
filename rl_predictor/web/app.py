@@ -26,6 +26,7 @@ global_agent = None
 env = None
 graph_env = None
 graph_sim = None
+journey_sim = None
 baseline_acc_history = []
 
 
@@ -265,9 +266,8 @@ class GraphDiscoverySimulator:
     def get_state(self, mode):
         return self._snapshot(mode)
 
-    def step(self, mode, exploration_level):
+    def _advance_mode(self, mode, rl_action, confidence, exploration_level):
         st = self.states[mode]
-        rl_action, confidence = self._rl_action(exploration_level)
         final_action = rl_action
         latest = self._latest(st)
         if mode == "hybrid" and latest["bubble_risk"] > 62 and rl_action == 2:
@@ -285,6 +285,11 @@ class GraphDiscoverySimulator:
         st["pref"][selected["topic_id"]] = min(1.0, st["pref"][selected["topic_id"]] + (0.03 if final_action == 2 else 0.015 if final_action == 1 else 0.008))
         st["history"].append(self._compute_metrics(mode, st))
         st["last"] = {"rl_action": rl_action, "final_action": final_action, "confidence": confidence, "topic_id": selected["topic_id"], "creator_id": selected["creator_id"], "content_id": selected["id"], "path_explanation": f"{'RL + Graph context' if mode == 'hybrid' else 'RL only'} selected '{selected['title']}' by traversing User -> Topic -> Creator -> Content under a {ACTION_LABELS[final_action].lower()} strategy."}
+
+    def step(self, mode, exploration_level):
+        rl_action, confidence = self._rl_action(exploration_level)
+        for mode_name in sorted(GRAPH_MODES):
+            self._advance_mode(mode_name, rl_action, confidence, exploration_level)
         return self._snapshot(mode)
 
 
@@ -299,6 +304,518 @@ def reset_graph_sim():
     global graph_sim
     graph_sim = GraphDiscoverySimulator(seed=2026)
     return graph_sim
+
+
+class FeedJourneySimulator:
+    def __init__(self, seed=2030):
+        self.seed = seed
+        self.max_steps = 12
+        self.topic_specs = [
+            {
+                "id": "ai_tools",
+                "label": "AI Tools",
+                "descriptor": "creative teams",
+                "creators": ["Signal Mint", "Neon Atlas"],
+                "adjacent": ["design_systems", "creative_coding", "future_work"],
+                "angles": ["for creative teams", "beyond the obvious", "you would actually keep open", "without the spam", "for curious builders", "worth a second look"],
+            },
+            {
+                "id": "design_systems",
+                "label": "Design Systems",
+                "descriptor": "product teams",
+                "creators": ["Grid Ritual", "Studio Relay"],
+                "adjacent": ["ai_tools", "creative_coding", "maker_stories"],
+                "angles": ["for product teams", "made practical", "with better taste", "that scale cleanly", "with less noise", "for sharper creative flow"],
+            },
+            {
+                "id": "creative_coding",
+                "label": "Creative Coding",
+                "descriptor": "makers",
+                "creators": ["Pixel Current", "Code Bloom"],
+                "adjacent": ["ai_tools", "design_systems", "indie_music"],
+                "angles": ["for makers", "with playful systems", "that feel alive", "for side-project energy", "that spark experiments", "with standout visuals"],
+            },
+            {
+                "id": "indie_music",
+                "label": "Indie Music",
+                "descriptor": "late-night listeners",
+                "creators": ["Tape Garden", "Midnight Loop"],
+                "adjacent": ["creative_coding", "film_essays", "maker_stories"],
+                "angles": ["for late-night listeners", "without the algorithm sludge", "that still feel human", "with scene energy", "for deeper listening", "worth replaying"],
+            },
+            {
+                "id": "maker_stories",
+                "label": "Maker Stories",
+                "descriptor": "independent builders",
+                "creators": ["Build Paper", "North Foundry"],
+                "adjacent": ["design_systems", "future_work", "indie_music"],
+                "angles": ["from independent builders", "with honest lessons", "that feel grounded", "without hustle noise", "from small teams", "worth stealing ideas from"],
+            },
+            {
+                "id": "future_work",
+                "label": "Future of Work",
+                "descriptor": "ambitious operators",
+                "creators": ["Next Shift", "Work Canvas"],
+                "adjacent": ["ai_tools", "maker_stories", "climate_science"],
+                "angles": ["for ambitious operators", "beyond automation fear", "with practical signals", "for better workflows", "without management jargon", "that change how teams move"],
+            },
+            {
+                "id": "film_essays",
+                "label": "Film Essays",
+                "descriptor": "story nerds",
+                "creators": ["Frame Craft", "Cinema Thread"],
+                "adjacent": ["indie_music", "climate_science", "future_work"],
+                "angles": ["for story nerds", "with sharper analysis", "that slow you down", "with visual intelligence", "that reward attention", "worth sitting with"],
+            },
+            {
+                "id": "climate_science",
+                "label": "Climate Science",
+                "descriptor": "curious thinkers",
+                "creators": ["Field Notes Lab", "Green Signal"],
+                "adjacent": ["future_work", "film_essays", "maker_stories"],
+                "angles": ["for curious thinkers", "without doomscrolling", "with practical hope", "beyond headlines", "that widen perspective", "that connect the dots"],
+            },
+        ]
+        self.topics = [
+            {
+                "id": spec["id"],
+                "label": spec["label"],
+                "descriptor": spec["descriptor"],
+                "adjacent": spec["adjacent"],
+                "angles": spec["angles"],
+            }
+            for spec in self.topic_specs
+        ]
+        self.topics_by_id = {topic["id"]: topic for topic in self.topics}
+        self.core_topic_ids = ["ai_tools", "design_systems", "creative_coding"]
+        self.persona = {
+            "name": "Maya",
+            "role": "Creative technologist",
+            "summary": "Maya loves AI, design craft, and maker culture, but her current feed is getting repetitive and overly optimized for short-term clicks.",
+            "intent": "Stay personalized while reopening space for adjacent discovery.",
+            "fatigue_signal": "Seeing too many near-identical AI productivity clips.",
+            "core_interests": [self.topics_by_id[topic_id]["label"] for topic_id in self.core_topic_ids],
+        }
+        self.base_prefs = {
+            "ai_tools": 0.88,
+            "design_systems": 0.78,
+            "creative_coding": 0.69,
+            "maker_stories": 0.61,
+            "future_work": 0.58,
+            "indie_music": 0.52,
+            "film_essays": 0.38,
+            "climate_science": 0.31,
+        }
+        prefixes = ["Signal Brief", "Field Note", "Creator Cut", "Fresh Find", "Deep Dive", "Side Quest"]
+        self.creators = []
+        self.contents = []
+        for topic_index, spec in enumerate(self.topic_specs):
+            creator_ids = []
+            for creator_index, creator_name in enumerate(spec["creators"], 1):
+                creator_id = f"{spec['id']}_creator_{creator_index}"
+                creator_ids.append(creator_id)
+                self.creators.append(
+                    {
+                        "id": creator_id,
+                        "name": creator_name,
+                        "topic_id": spec["id"],
+                    }
+                )
+            for item_index in range(6):
+                content_id = f"{spec['id']}_item_{item_index + 1}"
+                creator_id = creator_ids[item_index % len(creator_ids)]
+                angle = spec["angles"][item_index % len(spec["angles"])]
+                title = f"{prefixes[item_index % len(prefixes)]}: {spec['label']} {angle}"
+                self.contents.append(
+                    {
+                        "id": content_id,
+                        "title": title,
+                        "topic_id": spec["id"],
+                        "creator_id": creator_id,
+                        "novelty": round(min(0.96, 0.3 + ((topic_index + item_index * 2) % 8) * 0.075), 3),
+                        "quality": round(min(0.95, 0.56 + ((topic_index * 3 + item_index) % 7) * 0.05), 3),
+                        "engagement_hook": round(min(0.98, 0.5 + ((topic_index * 2 + item_index) % 6) * 0.075), 3),
+                    }
+                )
+        self.creators_by_id = {creator["id"]: creator for creator in self.creators}
+        self.contents_by_id = {content["id"]: content for content in self.contents}
+        self.reset()
+
+    def reset(self):
+        self.states = {
+            "baseline": self._new_state(),
+            "rl_guided": self._new_state(),
+        }
+        return self
+
+    def _new_state(self):
+        return {
+            "step": 0,
+            "pref": {topic_id: float(value) for topic_id, value in self.base_prefs.items()},
+            "topic_seen": defaultdict(int),
+            "creator_seen": defaultdict(int),
+            "content_seen": defaultdict(int),
+            "recent": [],
+            "trail": [],
+            "metrics_history": [],
+            "current": None,
+            "current_metrics": self._default_metrics(),
+        }
+
+    def _default_metrics(self):
+        return {
+            "repeat_rate": 0.0,
+            "creator_diversity": 0.0,
+            "topic_diversity": 0.0,
+            "bubble_risk": 0.0,
+            "satisfaction": 0.0,
+            "novelty_score": 0.0,
+            "fatigue_index": 0.0,
+        }
+
+    def _topic_relation(self, topic_id):
+        if topic_id in self.core_topic_ids:
+            return "core"
+        if any(topic_id in self.topics_by_id[core_id]["adjacent"] for core_id in self.core_topic_ids):
+            return "adjacent"
+        return "exploratory"
+
+    def _topic_fit_score(self, topic_id):
+        relation = self._topic_relation(topic_id)
+        return 1.0 if relation == "core" else 0.74 if relation == "adjacent" else 0.38
+
+    def _latest_metrics(self, lane):
+        return lane["current_metrics"]
+
+    def _state_vector(self, lane):
+        metrics = self._latest_metrics(lane)
+        pref_values = list(lane["pref"].values())
+        top_pref = max(pref_values)
+        avg_pref = sum(pref_values) / len(pref_values)
+        last_topic_id = self.contents_by_id[lane["recent"][-1]]["topic_id"] if lane["recent"] else self.core_topic_ids[0]
+        relation_bias = 1.0 if self._topic_relation(last_topic_id) != "exploratory" else 0.35
+        return np.array(
+            [
+                metrics["novelty_score"] / 50.0 - 1.0,
+                metrics["repeat_rate"] / 50.0 - 1.0,
+                float(np.clip((top_pref - avg_pref) * 2.2, -1.0, 1.0)),
+                metrics["creator_diversity"] / 50.0 - 1.0,
+                metrics["fatigue_index"] / 50.0 - 1.0,
+                metrics["topic_diversity"] / 50.0 - 1.0,
+                float(np.clip(top_pref * 1.6 - 0.8, -1.0, 1.0)),
+                float(np.clip(relation_bias * 2.0 - 1.0, -1.0, 1.0)),
+                metrics["bubble_risk"] / 50.0 - 1.0,
+                metrics["satisfaction"] / 50.0 - 1.0,
+            ],
+            dtype=np.float32,
+        )
+
+    def _pick_baseline_item(self, lane):
+        base = max(1, lane["step"])
+        last_topic_id = self.contents_by_id[lane["recent"][-1]]["topic_id"] if lane["recent"] else None
+        scored = []
+        for content in self.contents:
+            topic_id = content["topic_id"]
+            creator_id = content["creator_id"]
+            familiarity = lane["pref"][topic_id]
+            topic_repeat = lane["topic_seen"][topic_id] / base
+            creator_repeat = lane["creator_seen"][creator_id] / base
+            content_repeat = lane["content_seen"][content["id"]] / base
+            content_freshness = 1.0 - min(1.0, lane["content_seen"][content["id"]] / 2.0)
+            score = (
+                0.44 * familiarity
+                + 0.27 * content["engagement_hook"]
+                + 0.18 * content["quality"]
+                + 0.13 * self._topic_fit_score(topic_id)
+                + 0.20 * topic_repeat
+                + 0.08 * (1.0 if topic_id == last_topic_id else 0.0)
+                + 0.05 * creator_repeat
+                + 0.06 * content_freshness
+                - 0.04 * content["novelty"]
+                - 0.16 * content_repeat
+            )
+            scored.append((score, content))
+        scored.sort(key=lambda pair: (pair[0], pair[1]["title"]), reverse=True)
+        return scored[0][1]
+
+    def _pick_rl_item(self, lane, action, exploration_level):
+        base = max(1, lane["step"])
+        strongest_topic_id = max(lane["pref"], key=lane["pref"].get)
+        scored = []
+        for content in self.contents:
+            topic_id = content["topic_id"]
+            creator_id = content["creator_id"]
+            familiarity = lane["pref"][topic_id]
+            adjacency = 1.0 if topic_id in self.topics_by_id[strongest_topic_id]["adjacent"] else 0.55 if self._topic_relation(topic_id) != "exploratory" else 0.18
+            creator_freshness = 1.0 - min(1.0, lane["creator_seen"][creator_id] / base)
+            topic_freshness = 1.0 - min(1.0, lane["topic_seen"][topic_id] / base)
+            content_repeat = lane["content_seen"][content["id"]]
+            repeat_penalty = content_repeat * 0.18 + lane["topic_seen"][topic_id] * 0.05
+            safe_relevance = self._topic_fit_score(topic_id)
+            if action == 0:
+                score = (
+                    0.22 * familiarity
+                    + 0.24 * content["novelty"]
+                    + 0.22 * adjacency
+                    + 0.19 * creator_freshness
+                    + 0.17 * topic_freshness
+                    + 0.10 * safe_relevance
+                    + 0.08 * content["quality"]
+                )
+            elif action == 1:
+                score = (
+                    0.36 * familiarity
+                    + 0.18 * content["novelty"]
+                    + 0.18 * adjacency
+                    + 0.15 * creator_freshness
+                    + 0.12 * topic_freshness
+                    + 0.11 * safe_relevance
+                    + 0.10 * content["quality"]
+                )
+            else:
+                score = (
+                    0.52 * familiarity
+                    + 0.12 * content["novelty"]
+                    + 0.12 * adjacency
+                    + 0.12 * content["quality"]
+                    + 0.10 * safe_relevance
+                    + 0.08 * creator_freshness
+                    + 0.06 * (1.0 - min(1.0, content_repeat * 0.2))
+                )
+            score += exploration_level * (0.12 * topic_freshness + 0.10 * content["novelty"] + 0.08 * adjacency)
+            score -= repeat_penalty
+            scored.append((score, content))
+        scored.sort(key=lambda pair: (pair[0], pair[1]["title"]), reverse=True)
+        return scored[0][1]
+
+    def _update_preferences(self, lane_name, lane, selected, action=None):
+        decay = 0.986 if lane_name == "baseline" else 0.991
+        for topic_id in lane["pref"]:
+            lane["pref"][topic_id] = max(0.08, lane["pref"][topic_id] * decay)
+        if lane_name == "baseline":
+            lane["pref"][selected["topic_id"]] = min(1.0, lane["pref"][selected["topic_id"]] + 0.065)
+            for adjacent_topic_id in self.topics_by_id[selected["topic_id"]]["adjacent"][:1]:
+                lane["pref"][adjacent_topic_id] = min(1.0, lane["pref"][adjacent_topic_id] + 0.012)
+            return
+        if action == 0:
+            topic_boost, adjacent_boost = 0.028, 0.025
+        elif action == 1:
+            topic_boost, adjacent_boost = 0.032, 0.018
+        else:
+            topic_boost, adjacent_boost = 0.040, 0.010
+        lane["pref"][selected["topic_id"]] = min(1.0, lane["pref"][selected["topic_id"]] + topic_boost)
+        for adjacent_topic_id in self.topics_by_id[selected["topic_id"]]["adjacent"][:2]:
+            lane["pref"][adjacent_topic_id] = min(1.0, lane["pref"][adjacent_topic_id] + adjacent_boost)
+
+    def _build_baseline_reason(self, topic_label, relation, topic_seen_before):
+        if topic_seen_before > 0:
+            return f"High-engagement familiarity pulled the feed back toward {topic_label}."
+        if relation == "core":
+            return f"The baseline doubled down on a proven comfort zone in {topic_label}."
+        return f"The baseline chased a strong engagement hook inside {topic_label}."
+
+    def _build_rl_reason(self, topic_label, relation, action):
+        if action == 0:
+            return f"The RL policy widened the feed with {topic_label} while staying close to Maya's interests."
+        if action == 1:
+            return f"The RL policy kept {topic_label} in-range to preserve relevance without collapsing the feed."
+        if relation == "core":
+            return f"The RL policy deepened a trusted interest in {topic_label} without overcommitting the whole session."
+        return f"The RL policy chose {topic_label} as a relevant deepening step, not just a click magnet."
+
+    def _entry_tag(self, lane_name, relation, topic_seen_before, action=None):
+        if lane_name == "baseline":
+            if topic_seen_before > 0:
+                return "More of the same"
+            return "Engagement spike" if relation == "core" else "Sticky hook"
+        if action == 0:
+            return "Adjacent discovery"
+        if action == 1:
+            return "Balanced step"
+        return "Relevant depth"
+
+    def _ingest_item(self, lane_name, lane, selected, reason, tag, policy_label, action=None):
+        lane["step"] += 1
+        lane["topic_seen"][selected["topic_id"]] += 1
+        lane["creator_seen"][selected["creator_id"]] += 1
+        lane["content_seen"][selected["id"]] += 1
+        lane["recent"].append(selected["id"])
+        if len(lane["recent"]) > 18:
+            lane["recent"].pop(0)
+        self._update_preferences(lane_name, lane, selected, action=action)
+        relation = self._topic_relation(selected["topic_id"])
+        current_item = {
+            "step": lane["step"],
+            "content_id": selected["id"],
+            "title": selected["title"],
+            "topic_id": selected["topic_id"],
+            "topic_label": self.topics_by_id[selected["topic_id"]]["label"],
+            "creator_id": selected["creator_id"],
+            "creator_name": self.creators_by_id[selected["creator_id"]]["name"],
+            "policy_label": policy_label,
+            "reason": reason,
+            "tag": tag,
+            "relation": relation,
+            "novelty": selected["novelty"],
+            "quality": selected["quality"],
+        }
+        lane["current"] = current_item
+        lane["trail"].append(current_item)
+        if len(lane["trail"]) > 12:
+            lane["trail"].pop(0)
+        lane["current_metrics"] = self._compute_metrics(lane)
+        lane["metrics_history"].append(dict(lane["current_metrics"]))
+
+    def _compute_metrics(self, lane):
+        if not lane["trail"]:
+            return self._default_metrics()
+        window = lane["trail"][-6:]
+        repeat_rate = sum(1 for item in window if lane["content_seen"][item["content_id"]] > 1) / len(window)
+        creator_diversity = len({item["creator_id"] for item in window}) / len(window)
+        topic_diversity = len({item["topic_id"] for item in window}) / len(window)
+        topic_counts = defaultdict(int)
+        for item in window:
+            topic_counts[item["topic_id"]] += 1
+        hhi = sum((count / len(window)) ** 2 for count in topic_counts.values())
+        bubble_risk = min(1.0, max(0.0, (hhi - 0.20) / 0.50))
+        novelty_score = sum(item["novelty"] for item in window) / len(window)
+        adjacent_ratio = sum(1 for item in window if item["relation"] != "exploratory") / len(window)
+        satisfaction = min(
+            1.0,
+            max(
+                0.0,
+                0.34 * adjacent_ratio
+                + 0.22 * creator_diversity
+                + 0.18 * topic_diversity
+                + 0.16 * (1.0 - repeat_rate)
+                + 0.10 * novelty_score
+                - 0.24 * bubble_risk,
+            ),
+        )
+        fatigue_index = min(1.0, 0.55 * repeat_rate + 0.45 * bubble_risk)
+        return {
+            "repeat_rate": round(repeat_rate * 100, 1),
+            "creator_diversity": round(creator_diversity * 100, 1),
+            "topic_diversity": round(topic_diversity * 100, 1),
+            "bubble_risk": round(bubble_risk * 100, 1),
+            "satisfaction": round(satisfaction * 100, 1),
+            "novelty_score": round(novelty_score * 100, 1),
+            "fatigue_index": round(fatigue_index * 100, 1),
+        }
+
+    def _lane_payload(self, lane_name):
+        lane = self.states[lane_name]
+        return {
+            "lane_label": "Engagement-Only Feed" if lane_name == "baseline" else "RL Discovery Feed",
+            "metrics": lane["current_metrics"],
+            "current_item": lane["current"],
+            "trail": list(reversed(lane["trail"][-6:])),
+            "step": lane["step"],
+        }
+
+    def _delta_summary(self):
+        baseline_metrics = self.states["baseline"]["current_metrics"]
+        rl_metrics = self.states["rl_guided"]["current_metrics"]
+        return {
+            "bubble_risk_gap": round(baseline_metrics["bubble_risk"] - rl_metrics["bubble_risk"], 1),
+            "diversity_gap": round(rl_metrics["topic_diversity"] - baseline_metrics["topic_diversity"], 1),
+            "repeat_gap": round(baseline_metrics["repeat_rate"] - rl_metrics["repeat_rate"], 1),
+            "satisfaction_gap": round(rl_metrics["satisfaction"] - baseline_metrics["satisfaction"], 1),
+        }
+
+    def _narration(self):
+        baseline_item = self.states["baseline"]["current"]
+        rl_item = self.states["rl_guided"]["current"]
+        if not baseline_item or not rl_item:
+            return "Run the journey step-by-step to watch the same user split into two very different feed experiences."
+        baseline_topic = baseline_item["topic_label"]
+        rl_topic = rl_item["topic_label"]
+        delta = self._delta_summary()
+        if baseline_topic == rl_topic:
+            return f"Both feeds touched {baseline_topic}, but the RL lane kept more room for future variety while the baseline tightened around familiar engagement hooks."
+        if delta["bubble_risk_gap"] > 12:
+            return f"The engagement feed is looping back into {baseline_topic}, while the RL lane reopens discovery through {rl_topic} without losing relevance."
+        if delta["repeat_gap"] > 8:
+            return f"The baseline is repeating what already worked, but the RL lane pivots into {rl_topic} to protect discovery momentum."
+        return f"The same user now sees {baseline_topic} in the baseline lane and {rl_topic} in the RL lane, showing how policy design reshapes the feed journey."
+
+    def get_state(self):
+        step = max(self.states["baseline"]["step"], self.states["rl_guided"]["step"])
+        return {
+            "status": "ok",
+            "step": step,
+            "max_steps": self.max_steps,
+            "done": step >= self.max_steps,
+            "persona": self.persona,
+            "baseline": self._lane_payload("baseline"),
+            "rl_guided": self._lane_payload("rl_guided"),
+            "delta_summary": self._delta_summary(),
+            "narration": self._narration(),
+        }
+
+    def step(self, exploration_level):
+        if max(self.states["baseline"]["step"], self.states["rl_guided"]["step"]) >= self.max_steps:
+            return self.get_state()
+        baseline_lane = self.states["baseline"]
+        baseline_choice = self._pick_baseline_item(baseline_lane)
+        baseline_reason = self._build_baseline_reason(
+            self.topics_by_id[baseline_choice["topic_id"]]["label"],
+            self._topic_relation(baseline_choice["topic_id"]),
+            baseline_lane["topic_seen"][baseline_choice["topic_id"]],
+        )
+        baseline_tag = self._entry_tag(
+            "baseline",
+            self._topic_relation(baseline_choice["topic_id"]),
+            baseline_lane["topic_seen"][baseline_choice["topic_id"]],
+        )
+        self._ingest_item(
+            "baseline",
+            baseline_lane,
+            baseline_choice,
+            baseline_reason,
+            baseline_tag,
+            "Engagement Maximizer",
+        )
+
+        rl_lane = self.states["rl_guided"]
+        state_vector = self._state_vector(rl_lane)
+        action, confidence = get_agent().select_action(state_vector, training=False)
+        action, confidence = apply_exploration_preference(state_vector, action, confidence, exploration_level)
+        rl_choice = self._pick_rl_item(rl_lane, action, exploration_level)
+        rl_reason = self._build_rl_reason(
+            self.topics_by_id[rl_choice["topic_id"]]["label"],
+            self._topic_relation(rl_choice["topic_id"]),
+            action,
+        )
+        rl_tag = self._entry_tag(
+            "rl_guided",
+            self._topic_relation(rl_choice["topic_id"]),
+            rl_lane["topic_seen"][rl_choice["topic_id"]],
+            action=action,
+        )
+        self._ingest_item(
+            "rl_guided",
+            rl_lane,
+            rl_choice,
+            f"{rl_reason} ({confidence:.0%} confidence)",
+            rl_tag,
+            ACTION_LABELS[action],
+            action=action,
+        )
+        return self.get_state()
+
+
+def get_journey_sim():
+    global journey_sim
+    if journey_sim is None:
+        journey_sim = FeedJourneySimulator(seed=2030)
+    return journey_sim
+
+
+def reset_journey_sim():
+    global journey_sim
+    journey_sim = FeedJourneySimulator(seed=2030)
+    return journey_sim
 
 
 @app.route("/")
@@ -438,6 +955,25 @@ def graph_step():
     mode = parse_graph_mode(payload.get("mode", "hybrid"))
     level = parse_exploration_level(payload.get("exploration_level", 0.5))
     return jsonify(get_graph_sim().step(mode, level))
+
+
+@app.route("/api/journey/init", methods=["POST"])
+def journey_init():
+    payload = request.get_json(silent=True) or {}
+    sim = reset_journey_sim() if bool(payload.get("reset", False)) else get_journey_sim()
+    return jsonify(sim.get_state())
+
+
+@app.route("/api/journey/state", methods=["POST"])
+def journey_state():
+    return jsonify(get_journey_sim().get_state())
+
+
+@app.route("/api/journey/step", methods=["POST"])
+def journey_step():
+    payload = request.get_json(silent=True) or {}
+    level = parse_exploration_level(payload.get("exploration_level", 0.5))
+    return jsonify(get_journey_sim().step(level))
 
 
 if __name__ == "__main__":
