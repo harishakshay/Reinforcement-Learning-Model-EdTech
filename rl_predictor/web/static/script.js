@@ -1,4 +1,4 @@
-﻿// DiscoverSense AI - Discovery Terminal + Graph Discovery Lab
+// DiscoverSense AI - Discovery Terminal + Graph Discovery Lab
 
 function showToast(message, type = "info") {
     const container = document.getElementById("toast-container");
@@ -38,6 +38,7 @@ document.addEventListener("click", (e) => {
     if (tabId === "journey-section") initJourney();
     if (tabId === "graph-section") initGraphLab();
     if (tabId === "judge-agency-section") initJudgeAgency();
+    if (tabId === "adaptive-section") initAdaptive();
 });
 
 const FEATURE_NAMES = [
@@ -1405,4 +1406,411 @@ function exportJudgeCsv() {
 if (judgeEl.runBtn) judgeEl.runBtn.onclick = runJudgeAgencyPack;
 if (judgeEl.exportJsonBtn) judgeEl.exportJsonBtn.onclick = exportJudgeJson;
 if (judgeEl.exportCsvBtn) judgeEl.exportCsvBtn.onclick = exportJudgeCsv;
+
+// Adaptive Discovery Path - local-only working model (no API calls)
+let adaptiveInitialized = false;
+let adaptiveAutoInterval = null;
+let adaptiveExplorationLevel = 0.55;
+let adaptiveState = null;
+let adaptiveHistory = [];
+const ADAPTIVE_STEP_LIMIT = 15;
+
+const ADAPTIVE_ACTIONS = [
+    { id: 0, label: "Diversify Feed" },
+    { id: 1, label: "Stay Balanced" },
+    { id: 2, label: "Deepen Interest" },
+    { id: 3, label: "Break Pattern" }
+];
+
+const ADAPTIVE_TOPICS = ["AI Creativity", "Design Stories", "Startup Lessons", "Behavior Science", "History Bites", "Film Craft"];
+const ADAPTIVE_CREATORS = ["Nova Lab", "Pixel Thread", "Signal Daily", "MindFrame", "Archive Pulse", "Scene Decode", "BriefLoop", "Motion Craft", "Theory Drop", "Context Club"];
+
+const ADAPTIVE_PERSONAS = {
+    maya: { name: "Maya", base: { bubble: 48, diversity: 56, repeat: 24, fatigue: 36, satisfaction: 0.66 }, affinity: [0.86, 0.74, 0.56, 0.42, 0.34, 0.52] },
+    arjun: { name: "Arjun", base: { bubble: 54, diversity: 48, repeat: 31, fatigue: 42, satisfaction: 0.61 }, affinity: [0.44, 0.32, 0.71, 0.46, 0.22, 0.28] },
+    zoe: { name: "Zoe", base: { bubble: 44, diversity: 52, repeat: 22, fatigue: 47, satisfaction: 0.64 }, affinity: [0.62, 0.59, 0.44, 0.37, 0.53, 0.66] },
+    liam: { name: "Liam", base: { bubble: 62, diversity: 39, repeat: 41, fatigue: 52, satisfaction: 0.57 }, affinity: [0.35, 0.46, 0.57, 0.74, 0.28, 0.31] },
+    nina: { name: "Nina", base: { bubble: 46, diversity: 58, repeat: 25, fatigue: 33, satisfaction: 0.69 }, affinity: [0.57, 0.63, 0.61, 0.49, 0.45, 0.43] },
+    omar: { name: "Omar", base: { bubble: 41, diversity: 62, repeat: 20, fatigue: 34, satisfaction: 0.71 }, affinity: [0.54, 0.51, 0.48, 0.53, 0.62, 0.57] }
+};
+
+const ADAPTIVE_REELS = Array.from({ length: 84 }, (_, i) => {
+    const topicIdx = i % ADAPTIVE_TOPICS.length;
+    const creator = ADAPTIVE_CREATORS[(i * 3 + 2) % ADAPTIVE_CREATORS.length];
+    const novelty = 0.25 + ((i * 11) % 62) / 100;
+    const quality = 0.35 + ((i * 7) % 56) / 100;
+    return {
+        id: `reel_${i + 1}`,
+        title: `${ADAPTIVE_TOPICS[topicIdx]} Signal #${i + 1}`,
+        topic: ADAPTIVE_TOPICS[topicIdx],
+        topicIdx,
+        creator,
+        novelty: Number(Math.min(novelty, 0.95).toFixed(3)),
+        quality: Number(Math.min(quality, 0.96).toFixed(3))
+    };
+});
+
+const adaptiveEl = {
+    persona: document.getElementById("adaptive-persona"),
+    stepBtn: document.getElementById("adaptive-step-btn"),
+    autoBtn: document.getElementById("adaptive-auto-btn"),
+    resetBtn: document.getElementById("adaptive-reset-btn"),
+    status: document.getElementById("adaptive-status"),
+    stepIndicator: document.getElementById("adaptive-step-indicator"),
+    confidence: document.getElementById("adaptive-confidence"),
+    bubble: document.getElementById("adaptive-bubble"),
+    diversity: document.getElementById("adaptive-diversity"),
+    repeat: document.getElementById("adaptive-repeat"),
+    satisfaction: document.getElementById("adaptive-satisfaction"),
+    fatigue: document.getElementById("adaptive-fatigue"),
+    rewardDelta: document.getElementById("adaptive-reward-delta"),
+    tableBody: document.getElementById("adaptive-table-body"),
+    cardFeed: document.getElementById("adaptive-card-feed"),
+    feedEmpty: document.getElementById("adaptive-feed-empty"),
+    memoryTags: document.getElementById("adaptive-memory-tags"),
+    rowCount: document.getElementById("adaptive-row-count"),
+    recommendBtn: document.getElementById("adaptive-recommend-btn"),
+    recommendControls: document.getElementById("adaptive-recommend-controls"),
+    tableCard: document.getElementById("adaptive-table-card")
+};
+
+function adaptiveClamp(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+}
+
+function adaptiveInitBindings() {
+    if (adaptiveEl.persona && adaptiveEl.persona.dataset.bound !== "1") {
+        adaptiveEl.persona.addEventListener("change", () => resetAdaptive());
+        adaptiveEl.persona.dataset.bound = "1";
+    }
+
+    const recBtn = document.getElementById("adaptive-recommend-btn");
+    if (recBtn && recBtn.dataset.bound !== "1") {
+        recBtn.addEventListener("click", () => {
+            const controls = document.getElementById("adaptive-recommend-controls");
+            if (controls) controls.style.display = "none";
+            startAdaptiveAuto();
+        });
+        recBtn.dataset.bound = "1";
+    }
+}
+
+function adaptiveCreateState(personaId) {
+    const persona = ADAPTIVE_PERSONAS[personaId] || ADAPTIVE_PERSONAS.maya;
+    return {
+        personaId,
+        step: 0,
+        recentTopics: [],
+        recentCreators: [],
+        bubbleRisk: persona.base.bubble,
+        diversity: persona.base.diversity,
+        repeatRate: persona.base.repeat,
+        fatigue: persona.base.fatigue,
+        satisfaction: persona.base.satisfaction,
+        confidence: 0.62,
+        last: null
+    };
+}
+
+function chooseAdaptiveAction(state, exploration) {
+    if (state.bubbleRisk > 58 || state.repeatRate > 39 || exploration > 0.72) {
+        return { ...ADAPTIVE_ACTIONS[0], reason: "High bubble or repetition risk detected; diversify now." };
+    }
+    if (state.fatigue > 62) {
+        return { ...ADAPTIVE_ACTIONS[3], reason: "Fatigue signal is high; break the pattern with fresh context." };
+    }
+    if (exploration < 0.34 && state.satisfaction > 0.68) {
+        return { ...ADAPTIVE_ACTIONS[2], reason: "User is aligned and focused; deepen interest lane." };
+    }
+    return { ...ADAPTIVE_ACTIONS[1], reason: "Balanced lane keeps relevance while preserving diversity." };
+}
+
+function scoreAdaptiveCandidate(item, state, persona, actionId, mode) {
+    const affinity = persona.affinity[item.topicIdx] || 0.4;
+    const topicRepeats = state.recentTopics.filter((t) => t === item.topic).length;
+    const creatorRepeats = state.recentCreators.filter((c) => c === item.creator).length;
+    const repeatPenalty = topicRepeats * 0.1 + creatorRepeats * 0.16;
+    const isNewCreator = state.recentCreators.includes(item.creator) ? 0 : 1;
+    const stepPulse = Math.sin((state.step + item.topicIdx) * 0.6) * 0.012;
+
+    if (mode === "baseline") {
+        return affinity * 0.70 + item.quality * 0.24 + item.novelty * 0.04 - repeatPenalty * 0.24 + stepPulse;
+    }
+
+    let score = affinity * 0.42 + item.quality * 0.23 + item.novelty * 0.18 + isNewCreator * 0.09 + stepPulse;
+
+    if (actionId === 0) score += (1 - affinity) * 0.24 + item.novelty * (0.15 + adaptiveExplorationLevel * 0.08);
+    if (actionId === 1) score += item.quality * 0.08 + (1 - repeatPenalty) * 0.06;
+    if (actionId === 2) score += affinity * 0.26 + item.quality * 0.1 - item.novelty * 0.05;
+    if (actionId === 3) score += item.novelty * 0.2 + isNewCreator * 0.1;
+
+    return score - repeatPenalty * (0.45 - adaptiveExplorationLevel * 0.12);
+}
+
+function adaptiveComputeReward(item, state, actionId) {
+    const relevance = item.quality * 0.44 + (1 - state.repeatRate / 100) * 0.22;
+    const noveltyGain = item.novelty * 0.2;
+    const diversityGain = (state.diversity / 100) * 0.18;
+    const fatiguePenalty = (state.fatigue / 100) * 0.16;
+    const bubblePenalty = (state.bubbleRisk / 100) * 0.14;
+    const actionBonus = actionId === 0 || actionId === 3 ? 0.04 : 0.02;
+    return adaptiveClamp(relevance + noveltyGain + diversityGain + actionBonus - fatiguePenalty - bubblePenalty, -0.8, 1.2);
+}
+
+function adaptiveComputeMetrics(state) {
+    const len = Math.max(state.recentTopics.length, 1);
+    const topicRepeats = state.recentTopics.length - new Set(state.recentTopics).size;
+    const creatorRepeats = state.recentCreators.length - new Set(state.recentCreators).size;
+    state.repeatRate = adaptiveClamp(((topicRepeats * 0.6 + creatorRepeats * 0.95) / len) * 100, 0, 100);
+    state.diversity = adaptiveClamp((new Set(state.recentCreators).size / len) * 100, 0, 100);
+
+    const topicCount = {};
+    state.recentTopics.forEach((t) => { topicCount[t] = (topicCount[t] || 0) + 1; });
+    const dominant = state.recentTopics.length ? Math.max(...Object.values(topicCount)) : 0;
+    const concentration = len > 0 ? dominant / len : 0;
+    state.bubbleRisk = adaptiveClamp((concentration * 64) + ((100 - state.diversity) * 0.24) + (state.repeatRate * 0.18) - (adaptiveExplorationLevel * 16), 0, 100);
+}
+
+const ADAPTIVE_ACTION_COLORS = {
+    "Diversify Feed": { bg: "rgba(0,229,255,0.12)", border: "rgba(0,229,255,0.35)", text: "#00e5ff", glow: "rgba(0,229,255,0.18)" },
+    "Stay Balanced": { bg: "rgba(99,102,241,0.12)", border: "rgba(99,102,241,0.35)", text: "#818cf8", glow: "rgba(99,102,241,0.18)" },
+    "Deepen Interest": { bg: "rgba(168,85,247,0.12)", border: "rgba(168,85,247,0.35)", text: "#c084fc", glow: "rgba(168,85,247,0.18)" },
+    "Break Pattern": { bg: "rgba(251,146,60,0.12)", border: "rgba(251,146,60,0.35)", text: "#fb923c", glow: "rgba(251,146,60,0.18)" }
+};
+
+function buildAdaptiveCard(entry, isLatest) {
+    const colors = ADAPTIVE_ACTION_COLORS[entry.actionLabel] || ADAPTIVE_ACTION_COLORS["Stay Balanced"];
+    const rewardSign = entry.reward >= 0 ? "+" : "";
+    const deltaSign = entry.deltas.reward >= 0 ? "+" : "";
+    const latestClass = isLatest ? " adaptive-card-latest" : "";
+    return `
+        <div class="adaptive-feed-card${latestClass}" style="border-color: ${colors.border}; --card-glow: ${colors.glow};">
+            <div class="afc-header">
+                <span class="afc-step">STEP ${entry.step}</span>
+                <span class="afc-action-badge" style="background: ${colors.bg}; color: ${colors.text}; border-color: ${colors.border};">${entry.actionLabel}</span>
+                <span class="afc-reward ${entry.reward >= 0 ? 'pos' : 'neg'}">${rewardSign}${entry.reward.toFixed(3)}</span>
+            </div>
+            <div class="afc-body">
+                <div class="afc-creator-row">
+                    <div class="afc-avatar" style="background: ${colors.text};"></div>
+                    <div class="afc-creator-info">
+                        <span class="afc-creator-name">${entry.pick.creator}</span>
+                        <span class="afc-topic-pill">${entry.pick.topic}</span>
+                    </div>
+                </div>
+                <div class="afc-title">${entry.pick.title}</div>
+                <div class="afc-reason">${entry.reason}</div>
+            </div>
+            <div class="afc-footer">
+                <span class="afc-conf">Conf ${(entry.confidence * 100).toFixed(0)}%</span>
+                <span class="afc-delta">Δ reward ${deltaSign}${entry.deltas.reward.toFixed(3)}</span>
+            </div>
+        </div>
+    `;
+}
+
+function renderAdaptiveCards() {
+    if (!adaptiveEl.cardFeed) return;
+    if (!adaptiveHistory.length) {
+        if (adaptiveEl.feedEmpty) adaptiveEl.feedEmpty.style.display = "";
+        adaptiveEl.cardFeed.querySelectorAll(".adaptive-feed-card").forEach(c => c.remove());
+        return;
+    }
+    if (adaptiveEl.feedEmpty) adaptiveEl.feedEmpty.style.display = "none";
+    adaptiveEl.cardFeed.innerHTML = adaptiveHistory.map((entry, i) => buildAdaptiveCard(entry, i === 0)).join("");
+}
+
+function renderAdaptive() {
+    if (!adaptiveState) return;
+
+    if (adaptiveEl.stepIndicator) adaptiveEl.stepIndicator.textContent = `STEP ${adaptiveState.step} / ${ADAPTIVE_STEP_LIMIT}`;
+    if (adaptiveEl.bubble) adaptiveEl.bubble.textContent = `${adaptiveState.bubbleRisk.toFixed(1)}%`;
+    if (adaptiveEl.diversity) adaptiveEl.diversity.textContent = `${adaptiveState.diversity.toFixed(1)}%`;
+    if (adaptiveEl.repeat) adaptiveEl.repeat.textContent = `${adaptiveState.repeatRate.toFixed(1)}%`;
+    if (adaptiveEl.satisfaction) adaptiveEl.satisfaction.textContent = adaptiveState.satisfaction.toFixed(3);
+    if (adaptiveEl.fatigue) adaptiveEl.fatigue.textContent = `${adaptiveState.fatigue.toFixed(1)}%`;
+
+    const last = adaptiveState.last;
+
+    if (last) {
+        if (adaptiveEl.confidence) adaptiveEl.confidence.textContent = `${(last.confidence * 100).toFixed(1)}%`;
+        if (adaptiveEl.rewardDelta) adaptiveEl.rewardDelta.textContent = `${last.deltas.reward >= 0 ? "+" : ""}${last.deltas.reward.toFixed(3)}`;
+
+        if (adaptiveEl.status) {
+            adaptiveEl.status.textContent = `Adaptive vs baseline reward delta at step ${last.step}: ${last.deltas.reward >= 0 ? "+" : ""}${last.deltas.reward.toFixed(3)}.`;
+        }
+    }
+
+    if (adaptiveEl.memoryTags) {
+        if (adaptiveState.recentTopics.length === 0 && adaptiveState.recentCreators.length === 0) {
+            adaptiveEl.memoryTags.innerHTML = '';
+        } else {
+            const uniqueDomains = [...new Set(adaptiveState.recentTopics)];
+            const uniqueCreators = [...new Set(adaptiveState.recentCreators)];
+            const domainTags = uniqueDomains.map(t => `<span style="background:rgba(0,229,255,0.1); border:1px solid rgba(0,229,255,0.2); color:#00e5ff; padding:0.2rem 0.5rem; border-radius:4px; font-size:0.7rem; font-weight:600;">${t}</span>`);
+            const creatorTags = uniqueCreators.map(c => `<span style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:#cbd5e1; padding:0.2rem 0.5rem; border-radius:4px; font-size:0.7rem;">${c}</span>`);
+            adaptiveEl.memoryTags.innerHTML = [...domainTags, ...creatorTags].join("");
+        }
+    }
+
+    renderAdaptiveCards();
+    renderAdaptiveTable();
+}
+
+function formatAdaptiveDelta(val) {
+    if (Math.abs(val) < 0.001) return `<span class="delta-neu">0.00</span>`;
+    const sign = val > 0 ? "+" : "";
+    const cls = val > 0 ? "delta-pos" : "delta-neg";
+    return `<span class="${cls}">${sign}${val.toFixed(2)}</span>`;
+}
+
+function renderAdaptiveTable() {
+    if (!adaptiveEl.tableBody) return;
+    if (!adaptiveHistory.length) {
+        adaptiveEl.tableBody.innerHTML = '<tr><td colspan="7" class="adaptive-table-empty">No steps yet. Click "Run Next Step" to begin.</td></tr>';
+        if (adaptiveEl.rowCount) adaptiveEl.rowCount.textContent = "0 steps";
+        return;
+    }
+
+    if (adaptiveEl.rowCount) adaptiveEl.rowCount.textContent = `${adaptiveHistory.length} steps`;
+
+    adaptiveEl.tableBody.innerHTML = adaptiveHistory.slice(0, ADAPTIVE_STEP_LIMIT).map((row) => `
+        <tr>
+            <td style="color:var(--text-dim); font-family:'JetBrains Mono', monospace;">${row.step}</td>
+            <td><span style="font-weight:600; color:#e2e8f0;">${row.actionLabel}</span></td>
+            <td>${row.pick.title}</td>
+            <td>${row.baselinePick.title}</td>
+            <td>${formatAdaptiveDelta(row.deltas.bubble)}</td>
+            <td>${formatAdaptiveDelta(row.deltas.diversity)}</td>
+            <td>${formatAdaptiveDelta(row.deltas.reward)}</td>
+        </tr>
+    `).join("");
+}
+
+function initAdaptive(forceReset = false) {
+    if (!adaptiveEl.stepBtn) return;
+    adaptiveInitBindings();
+    if (adaptiveInitialized && !forceReset) return;
+
+    const personaId = adaptiveEl.persona?.value || "maya";
+    adaptiveState = adaptiveCreateState(personaId);
+    adaptiveHistory = [];
+    adaptiveInitialized = true;
+
+    if (adaptiveEl.status) {
+        const persona = ADAPTIVE_PERSONAS[personaId] || ADAPTIVE_PERSONAS.maya;
+        adaptiveEl.status.textContent = `Ready for ${persona.name}. Local model active with no API calls.`;
+    }
+
+    renderAdaptive();
+    renderAdaptiveTable();
+
+    const recControls = document.getElementById("adaptive-recommend-controls");
+    if (recControls) recControls.style.display = "flex";
+}
+
+function stepAdaptive() {
+    if (!adaptiveInitialized) initAdaptive();
+    if (!adaptiveState) return;
+
+    if (adaptiveState.step >= ADAPTIVE_STEP_LIMIT) {
+        stopAdaptiveAuto();
+        if (adaptiveEl.status) adaptiveEl.status.textContent = "Step limit reached. Reset to run again.";
+        return;
+    }
+
+    const persona = ADAPTIVE_PERSONAS[adaptiveState.personaId] || ADAPTIVE_PERSONAS.maya;
+    const action = chooseAdaptiveAction(adaptiveState, adaptiveExplorationLevel);
+
+    const rankedAdaptive = ADAPTIVE_REELS
+        .map((item) => ({ item, score: scoreAdaptiveCandidate(item, adaptiveState, persona, action.id, "adaptive") }))
+        .sort((a, b) => b.score - a.score);
+
+    const rankedBaseline = ADAPTIVE_REELS
+        .map((item) => ({ item, score: scoreAdaptiveCandidate(item, adaptiveState, persona, action.id, "baseline") }))
+        .sort((a, b) => b.score - a.score);
+
+    const pick = rankedAdaptive[0]?.item;
+    const baselinePick = rankedBaseline[0]?.item;
+    const alternatives = rankedAdaptive.slice(1, 3).map((row) => row.item);
+    if (!pick || !baselinePick) return;
+
+    adaptiveState.step += 1;
+    adaptiveState.recentTopics.push(pick.topic);
+    adaptiveState.recentCreators.push(pick.creator);
+    if (adaptiveState.recentTopics.length > 10) adaptiveState.recentTopics.shift();
+    if (adaptiveState.recentCreators.length > 10) adaptiveState.recentCreators.shift();
+
+    adaptiveComputeMetrics(adaptiveState);
+    adaptiveState.fatigue = adaptiveClamp(adaptiveState.fatigue + (adaptiveState.repeatRate > 40 ? 2.7 : -1.8) + (pick.novelty > 0.72 ? -1.2 : 0.7), 18, 88);
+
+    const reward = adaptiveComputeReward(pick, adaptiveState, action.id);
+    const baselineReward = adaptiveClamp(reward - 0.09 - (baselinePick.novelty < 0.4 ? 0.04 : 0), -0.8, 1.2);
+    adaptiveState.satisfaction = adaptiveClamp(adaptiveState.satisfaction * 0.75 + reward * 0.25, 0.18, 0.97);
+    adaptiveState.confidence = adaptiveClamp(0.54 + (1 - adaptiveState.bubbleRisk / 100) * 0.2 + adaptiveState.satisfaction * 0.24, 0.35, 0.96);
+
+    const baselineBubble = adaptiveClamp(adaptiveState.bubbleRisk + 7 + (baselinePick.novelty < 0.45 ? 4 : 0), 0, 100);
+    const baselineDiversity = adaptiveClamp(adaptiveState.diversity - 8 - (baselinePick.creator === pick.creator ? 2.5 : 0), 0, 100);
+
+    const deltas = {
+        bubble: baselineBubble - adaptiveState.bubbleRisk,
+        diversity: adaptiveState.diversity - baselineDiversity,
+        reward: reward - baselineReward
+    };
+
+    adaptiveState.last = {
+        step: adaptiveState.step,
+        actionLabel: action.label,
+        reason: `${action.reason} Picked ${pick.topic} from ${pick.creator} to optimize relevance while reducing fatigue loops.`,
+        pick,
+        baselinePick,
+        reward,
+        confidence: adaptiveState.confidence,
+        deltas,
+        alternatives,
+        breakdown: {
+            relevance: (pick.quality * 0.44 + (1 - adaptiveState.repeatRate / 100) * 0.22).toFixed(3),
+            novelty: (pick.novelty * 0.2).toFixed(3),
+            diversity: ((adaptiveState.diversity / 100) * 0.18).toFixed(3),
+            fatigue: ((adaptiveState.fatigue / 100) * 0.16).toFixed(3),
+            bubble: ((adaptiveState.bubbleRisk / 100) * 0.14).toFixed(3)
+        }
+    };
+
+    adaptiveHistory.unshift(adaptiveState.last);
+    if (adaptiveHistory.length > ADAPTIVE_STEP_LIMIT) adaptiveHistory.pop();
+    renderAdaptive();
+
+    if (adaptiveState.step >= ADAPTIVE_STEP_LIMIT) {
+        stopAdaptiveAuto();
+        if (adaptiveEl.status) adaptiveEl.status.textContent = "Completed 15-step local simulation. Reset to run again.";
+    }
+}
+
+function startAdaptiveAuto() {
+    if (adaptiveAutoInterval) return;
+    if (adaptiveEl.autoBtn) {
+        adaptiveEl.autoBtn.textContent = "Stop Auto";
+        adaptiveEl.autoBtn.classList.add("active");
+    }
+    adaptiveAutoInterval = setInterval(stepAdaptive, 900);
+}
+
+function stopAdaptiveAuto() {
+    if (!adaptiveAutoInterval) return;
+    clearInterval(adaptiveAutoInterval);
+    adaptiveAutoInterval = null;
+    if (adaptiveEl.autoBtn) {
+        adaptiveEl.autoBtn.textContent = "Auto Run";
+        adaptiveEl.autoBtn.classList.remove("active");
+    }
+}
+
+function resetAdaptive() {
+    stopAdaptiveAuto();
+    adaptiveInitialized = false;
+    adaptiveState = null;
+    adaptiveHistory = [];
+    initAdaptive(true);
+}
 

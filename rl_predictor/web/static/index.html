@@ -1,11 +1,11 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DiscoverSense AI | RL Content Discovery Simulator</title>
     <meta name="description" content="A reinforcement-learning simulation that helps users break repetitive feeds while keeping personalization and control.">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=2">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -25,6 +25,7 @@
                 <li><a href="#" class="tab-link" data-tab="comparison-section">Policy Benchmark</a></li>
                 <li><a href="#" class="tab-link" data-tab="graph-section">Graph Discovery Lab</a></li>
                 <li><a href="#" class="tab-link" data-tab="judge-agency-section">Judge Agency Test</a></li>
+                <li><a href="#" class="tab-link" data-tab="adaptive-section">Adaptive Path</a></li>
                 <li><a href="#" class="tab-link" data-tab="architecture-section">How It Works</a></li>
             </ul>
             <div class="nav-badges">
@@ -579,6 +580,175 @@
                 </div>
             </div>
         </section>
+
+        <section id="adaptive-section" class="tab-pane">
+            <div class="section-header">
+                <span class="section-tag">Adaptive Discovery Path</span>
+                <h2>Working No-API Personalized Reels Path</h2>
+                <p>Live local simulation with state -> action -> reward updates. No backend call, no latency, fully judge-ready.</p>
+            </div>
+
+            <div class="live-stats-bar">
+                <div class="live-stat">
+                    <span class="live-stat-val" id="adaptive-bubble">32.0%</span>
+                    <span class="live-stat-label">Bubble Risk</span>
+                </div>
+                <div class="live-stat accent-green">
+                    <span class="live-stat-val" id="adaptive-diversity">68.0%</span>
+                    <span class="live-stat-label">Creator Diversity</span>
+                </div>
+                <div class="live-stat accent-cyan">
+                    <span class="live-stat-val" id="adaptive-repeat">22.0%</span>
+                    <span class="live-stat-label">Repeat Rate</span>
+                </div>
+                <div class="live-stat accent-purple">
+                    <span class="live-stat-val" id="adaptive-satisfaction">0.840</span>
+                    <span class="live-stat-label">Satisfaction</span>
+                </div>
+                <div class="live-stat">
+                    <span class="live-stat-val" id="adaptive-fatigue">19.0%</span>
+                    <span class="live-stat-label">Fatigue Risk</span>
+                </div>
+            </div>
+
+            <div class="dashboard-grid" style="grid-template-columns: 280px 1fr 340px;">
+                <div class="panel glass-card">
+                    <div class="panel-title">
+                        <span class="panel-icon">&#9679;</span>
+                        Adaptive Settings
+                        <span class="live-dot" id="adaptive-indicator">LIVE</span>
+                    </div>
+                    <div class="judge-field" style="margin-bottom: 1.5rem;">
+                        <label for="adaptive-persona" class="state-vec-label">User Persona</label>
+                        <select id="adaptive-persona" style="width: 100%; padding: 0.5rem; background: rgba(0,0,0,0.4); border: 1px solid var(--border); color: #fff; border-radius: 4px; font-family: 'Inter', sans-serif;">
+                            <option value="maya">Maya - Creative Explorer</option>
+                            <option value="arjun">Arjun - Tech Learner</option>
+                            <option value="zoe">Zoe - Trend Chaser</option>
+                            <option value="liam">Liam - Niche Deep Diver</option>
+                            <option value="nina">Nina - Balanced Discoverer</option>
+                            <option value="omar">Omar - Curious Generalist</option>
+                        </select>
+                    </div>
+                    <div style="text-align: center; margin-bottom: 1.2rem;">
+                        <img src="robot.png" alt="AI Discovery Agent" style="width: 100%; max-width: 240px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 6px 20px rgba(0,0,0,0.4); opacity: 0.92;">
+                    </div>
+                    <div class="state-vec-box">
+                        <span class="state-vec-label">Additional Meta</span>
+                        <div style="font-size: 0.8rem; margin-top: 0.5rem; color: var(--text-dim);">
+                            <div style="margin-bottom: 0.5rem;"><span>Reward Delta vs Baseline:</span> <strong id="adaptive-reward-delta">-</strong></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel center-col">
+                    <div class="glass-card prediction-card">
+                        <div class="card-header">
+                            <span class="step-pill" id="adaptive-step-indicator">STEP 0 / 15</span>
+                            <span id="adaptive-confidence" class="conf-badge">- CONF</span>
+                        </div>
+                        <!-- ADAPTIVE CARD FEED -->
+                        <div id="adaptive-card-feed" class="adaptive-card-feed">
+                            <div class="adaptive-feed-empty" id="adaptive-feed-empty" style="flex-direction: column; align-items: center; padding: 2rem 1rem;">
+                                <div class="adaptive-feed-empty-icon" style="color: #00e5ff; font-size: 2.5rem; margin-bottom: 0.5rem;">&#10024;</div>
+                                <p style="font-weight: 600; font-size: 1.1rem; color: #fff; margin-bottom: 0.4rem;">Up Next: AI-Curated Discovery Queue</p>
+                                <p style="font-size: 0.85rem; color: var(--text-dim); max-width: 90%; margin: 0 auto 1.2rem;">Based on your activity, the RL agent has flagged these domains to safely expand your interests without causing fatigue:</p>
+                                
+                                <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; margin-bottom: 0.5rem;">
+                                    <span style="background: rgba(0, 255, 136, 0.1); border: 1px solid rgba(0, 255, 136, 0.3); color: #00ff88; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600;">System Architecture</span>
+                                    <span style="background: rgba(192, 132, 252, 0.1); border: 1px solid rgba(192, 132, 252, 0.3); color: #c084fc; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600;">Advanced AI Dev</span>
+                                    <span style="background: rgba(0, 229, 255, 0.1); border: 1px solid rgba(0, 229, 255, 0.3); color: #00e5ff; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600;">Cloud Security</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="state-vec-box">
+                            <span class="state-vec-label">Preserved Memory</span>
+                            <p id="adaptive-memory-text" style="font-size: 0.8rem; color: var(--text-dim); margin-top: 0.3rem;">Your memory is preserved and displaying some of the domains and the things we recently saw.</p>
+                            <div id="adaptive-memory-tags" style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.6rem;">
+                            </div>
+                        </div>
+
+                        <p id="adaptive-status" class="judge-pack-status" style="margin-top: 1rem; text-align: center; font-size: 0.75rem; color: var(--text-dim);">Ready. Local model mode active (no API calls).</p>
+                    </div>
+
+                    <div class="glass-card adaptive-compare-card">
+                        <div class="adaptive-compare-header">
+                            <span class="adaptive-compare-title">Preserved Memory History</span>
+                            <span class="adaptive-compare-badge">10 entries</span>
+                        </div>
+                        <div class="adaptive-table-wrap">
+                            <table class="adaptive-table" style="font-size: 0.75rem;">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Timestamp</th>
+                                        <th>Domain</th>
+                                        <th>Reel Topic</th>
+                                        <th>Duration (sec)</th>
+                                        <th>Watch %</th>
+                                        <th>Action</th>
+                                        <th>Difficulty</th>
+                                        <th>Interest Score</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>1</td><td>2026-04-15 10:12</td><td>Machine Learning</td><td>Neural Networks Basics</td><td>45</td><td>100%</td><td><span style="color:#00ff88; font-weight:600;">Liked</span></td><td>Medium</td><td><strong style="color:var(--primary);">9</strong></td></tr>
+                                    <tr><td>2</td><td>2026-04-15 11:05</td><td>Web Development</td><td>React Hooks Explained</td><td>30</td><td>85%</td><td><span style="color:#00e5ff; font-weight:600;">Saved</span></td><td>Easy</td><td><strong style="color:var(--primary);">8</strong></td></tr>
+                                    <tr><td>3</td><td>2026-04-15 12:20</td><td>Data Science</td><td>Data Cleaning Tips</td><td>50</td><td>60%</td><td><span style="color:#ff3e3e; font-weight:600;">Skipped</span></td><td>Medium</td><td><strong style="color:var(--text-dim);">5</strong></td></tr>
+                                    <tr><td>4</td><td>2026-04-15 14:10</td><td>Cyber Security</td><td>SQL Injection Demo</td><td>40</td><td>100%</td><td><span style="color:#c084fc; font-weight:600;">Shared</span></td><td>Hard</td><td><strong style="color:var(--primary);">9</strong></td></tr>
+                                    <tr><td>5</td><td>2026-04-15 16:45</td><td>Machine Learning</td><td>Reinforcement Learning Intro</td><td>60</td><td>95%</td><td><span style="color:#00ff88; font-weight:600;">Liked</span></td><td>Hard</td><td><strong style="color:var(--primary);">10</strong></td></tr>
+                                    <tr><td>6</td><td>2026-04-15 18:00</td><td>Finance</td><td>Stock Market Basics</td><td>35</td><td>70%</td><td><span style="color:#00ff88; font-weight:600;">Liked</span></td><td>Easy</td><td><strong style="color:var(--primary);">7</strong></td></tr>
+                                    <tr><td>7</td><td>2026-04-15 19:30</td><td>Web Development</td><td>CSS Flexbox in 1 min</td><td>25</td><td>100%</td><td><span style="color:#00e5ff; font-weight:600;">Saved</span></td><td>Easy</td><td><strong style="color:var(--primary);">8</strong></td></tr>
+                                    <tr><td>8</td><td>2026-04-15 20:10</td><td>AI Tools</td><td>Using Chatbots Efficiently</td><td>55</td><td>90%</td><td><span style="color:#00ff88; font-weight:600;">Liked</span></td><td>Medium</td><td><strong style="color:var(--primary);">9</strong></td></tr>
+                                    <tr><td>9</td><td>2026-04-15 21:00</td><td>Data Science</td><td>Pandas Tricks</td><td>40</td><td>50%</td><td><span style="color:#ff3e3e; font-weight:600;">Skipped</span></td><td>Medium</td><td><strong style="color:var(--text-dim);">4</strong></td></tr>
+                                    <tr><td>10</td><td>2026-04-15 22:15</td><td>Cyber Security</td><td>Password Cracking Explained</td><td>45</td><td>80%</td><td><span style="color:#00e5ff; font-weight:600;">Saved</span></td><td>Hard</td><td><strong style="color:var(--primary);">8</strong></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel glass-card">
+                    <div class="panel-title">
+                        <span class="panel-icon reward-icon" style="color: #00e5ff;">&#9650;</span>
+                        Reward Architecture
+                    </div>
+                    <div class="reward-display">
+                        <span class="reward-num pos">+0.814</span>
+                        <span class="reward-label">Optimized Step Reward</span>
+                    </div>
+                    
+                    <div class="reward-bar-section" style="margin-top: 1.5rem;">
+                        <h4 class="sub-label" style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.4rem; margin-bottom: 0.8rem;">Calculation Breakdown</h4>
+                        <div style="font-size: 0.8rem; color: #dbe4f3; display: flex; flex-direction: column; gap: 0.4rem; font-family: 'JetBrains Mono', monospace; background: rgba(0,0,0,0.2); padding: 0.8rem; border-radius: 8px;">
+                            <div style="display:flex; justify-content:space-between;"><span>Relevance:</span> <span style="color:#00e5ff;">+0.420</span></div>
+                            <div style="display:flex; justify-content:space-between;"><span>Novelty (Exploration):</span> <span style="color:#c084fc;">+0.180</span></div>
+                            <div style="display:flex; justify-content:space-between;"><span>Diversity Penalty:</span> <span style="color:#ff3e3e;">-0.030</span></div>
+                            <div style="display:flex; justify-content:space-between;"><span>Fatigue Penalty:</span> <span style="color:#ff3e3e;">-0.080</span></div>
+                            <div style="display:flex; justify-content:space-between;"><span>Bubble Risk Reduction:</span> <span style="color:#00ff88;">+0.324</span></div>
+                        </div>
+                    </div>
+
+                    <div class="reward-bar-section" style="margin-top: 1.5rem;">
+                        <h4 class="sub-label" style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.4rem; margin-bottom: 0.8rem;">Alternative Interventions</h4>
+                        <ul style="font-size: 0.8rem; color: var(--text-dim); padding-left: 1.2rem; display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0;">
+                            <li><strong style="color:#818cf8;">Deepen Interest:</strong> Tech Startup Pitch (Scores zero for novelty)</li>
+                            <li><strong style="color:#fb923c;">Break Pattern:</strong> Cooking Tutorial (Too far off-policy)</li>
+                        </ul>
+                    </div>
+
+                    <div class="log-section" style="margin-top: 1.5rem;">
+                        <h4 class="sub-label" style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.4rem; margin-bottom: 0.8rem;">System Pipeline Logs</h4>
+                        <div class="log-container" style="max-height: 180px;">
+                            <div class="graph-log-row"><span>SYS</span><strong>User detected locked in repeating creator loop.</strong></div>
+                            <div class="graph-log-row"><span>RL</span><strong>Exploration parameter implicitly increased.</strong></div>
+                            <div class="graph-log-row"><span>ACT</span><strong>Diversify Feed action dispatched.</strong></div>
+                            <div class="graph-log-row"><span>RWD</span><strong>High reward received for varied domain engagement.</strong></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <section id="architecture-section" class="tab-pane">
             <div class="section-header">
                 <h2>How the Simulation Works</h2>
