@@ -2631,3 +2631,195 @@ body.chaos-active {
 .rl-terminal.active {
     box-shadow: inset 0 0 50px rgba(0, 229, 255, 0.1);
 }
+
+/* JUDGE AGENCY TEST */
+.judge-agency-wrap {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 2rem 3rem;
+    display: grid;
+    gap: 1rem;
+}
+
+.judge-control-card {
+    padding: 1rem;
+}
+
+.judge-control-grid {
+    display: grid;
+    grid-template-columns: 180px 180px 1fr;
+    gap: 0.8rem;
+    align-items: end;
+}
+
+.judge-field label {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    margin-bottom: 0.3rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.judge-field input {
+    width: 100%;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.03);
+    color: #fff;
+    padding: 0.55rem;
+}
+
+.judge-actions {
+    display: flex;
+    gap: 0.55rem;
+    flex-wrap: wrap;
+}
+
+.judge-pack-status {
+    margin-top: 0.7rem;
+    color: var(--text-dim);
+    font-size: 0.82rem;
+}
+
+.judge-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(120px, 1fr));
+    gap: 0.75rem;
+}
+
+.judge-metric-card {
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    text-align: left;
+}
+
+.judge-metric-card span {
+    display: block;
+    color: var(--text-dim);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.25rem;
+}
+
+.judge-metric-card strong {
+    font-size: 1.05rem;
+    color: #fff;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.judge-check-card {
+    padding: 1rem;
+}
+
+.judge-panel-title {
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 0.65rem;
+    font-weight: 700;
+}
+
+.judge-check-list {
+    display: grid;
+    gap: 0.55rem;
+}
+
+.judge-check-item {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.65rem 0.8rem;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.judge-check-item.pass {
+    border-color: rgba(0, 255, 136, 0.35);
+}
+
+.judge-check-item.fail {
+    border-color: rgba(255, 62, 62, 0.35);
+}
+
+.judge-check-head {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    font-size: 0.83rem;
+}
+
+.judge-check-head strong {
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.judge-check-item.pass .judge-check-head strong {
+    color: #00ff88;
+}
+
+.judge-check-item.fail .judge-check-head strong {
+    color: #ff6b6b;
+}
+
+.judge-check-item p {
+    margin: 0.35rem 0 0;
+    color: var(--text-dim);
+    font-size: 0.78rem;
+}
+
+.judge-table-card {
+    padding: 1rem;
+}
+
+.judge-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 950px;
+}
+
+.judge-table th,
+.judge-table td {
+    border-bottom: 1px solid var(--border);
+    padding: 0.55rem;
+    text-align: left;
+    font-size: 0.78rem;
+}
+
+.judge-table th {
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.68rem;
+}
+
+.judge-table td {
+    color: #dbe4f3;
+}
+
+@media (max-width: 1100px) {
+    .judge-control-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .judge-actions {
+        grid-column: 1 / -1;
+    }
+
+    .judge-summary-grid {
+        grid-template-columns: repeat(2, minmax(140px, 1fr));
+    }
+}
+
+@media (max-width: 700px) {
+    .judge-agency-wrap {
+        padding: 0 1rem 2rem;
+    }
+
+    .judge-control-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .judge-summary-grid {
+        grid-template-columns: 1fr;
+    }
+}

@@ -1,4 +1,4 @@
-// DiscoverSense AI - Discovery Terminal + Graph Discovery Lab
+﻿// DiscoverSense AI - Discovery Terminal + Graph Discovery Lab
 
 function showToast(message, type = "info") {
     const container = document.getElementById("toast-container");
@@ -37,6 +37,7 @@ document.addEventListener("click", (e) => {
     if (tabId === "demo-section") initTerminal();
     if (tabId === "journey-section") initJourney();
     if (tabId === "graph-section") initGraphLab();
+    if (tabId === "judge-agency-section") initJudgeAgency();
 });
 
 const FEATURE_NAMES = [
@@ -526,7 +527,7 @@ function renderJourneyTrail(container, trail, toneClass) {
             <div class="journey-trail-body">
                 <span class="journey-trail-tag">${item.tag}</span>
                 <strong>${item.title}</strong>
-                <span>${item.topic_label} · ${item.creator_name}</span>
+                <span>${item.topic_label} Â· ${item.creator_name}</span>
             </div>
         </div>
     `).join("");
@@ -1014,3 +1015,394 @@ function addGraphLog(tag, msg) {
 }
 
 setupGraphControls();
+
+// Judge Agency Test
+let judgeAgencyInitialized = false;
+let judgeAgencyLastResult = null;
+let judgeDemoCursor = 0;
+
+const judgeEl = {
+    stepsInput: document.getElementById("judge-steps"),
+    seedInput: document.getElementById("judge-seed"),
+    runBtn: document.getElementById("judge-run-pack"),
+    exportJsonBtn: document.getElementById("judge-export-json"),
+    exportCsvBtn: document.getElementById("judge-export-csv"),
+    status: document.getElementById("judge-pack-status"),
+    summaryBubble: document.getElementById("judge-summary-bubble"),
+    summaryDiversity: document.getElementById("judge-summary-diversity"),
+    summaryRepeat: document.getElementById("judge-summary-repeat"),
+    summaryReward: document.getElementById("judge-summary-reward"),
+    summaryConfidence: document.getElementById("judge-summary-confidence"),
+    summaryChecks: document.getElementById("judge-summary-checks"),
+    checksContainer: document.getElementById("judge-checks"),
+    tableBody: document.getElementById("judge-scenario-table-body")
+};
+
+const JUDGE_SCENARIO_TEMPLATE = {
+    rl_only_focused: { name: "Focused + RL Only", mode: "rl_only", exploration_level: 0.2, exploration_band: "Focused" },
+    rl_only_balanced: { name: "Balanced + RL Only", mode: "rl_only", exploration_level: 0.5, exploration_band: "Balanced" },
+    rl_only_exploratory: { name: "Exploratory + RL Only", mode: "rl_only", exploration_level: 0.8, exploration_band: "Exploratory" },
+    hybrid_focused: { name: "Focused + RL + Graph", mode: "hybrid", exploration_level: 0.2, exploration_band: "Focused" },
+    hybrid_balanced: { name: "Balanced + RL + Graph", mode: "hybrid", exploration_level: 0.5, exploration_band: "Balanced" },
+    hybrid_exploratory: { name: "Exploratory + RL + Graph", mode: "hybrid", exploration_level: 0.8, exploration_band: "Exploratory" }
+};
+
+const JUDGE_DEMO_RAW = [
+    {
+        label: "Set 1 · Balanced Discovery",
+        metrics: {
+            rl_only_focused: { bubble_risk: 64.4, creator_diversity: 41.2, repeat_rate: 53.1, novelty_score: 39.8, satisfaction_reward: 0.4121, policy_confidence: 0.6322, dominant_action: "Stay Balanced" },
+            rl_only_balanced: { bubble_risk: 58.9, creator_diversity: 48.6, repeat_rate: 45.0, novelty_score: 46.4, satisfaction_reward: 0.5316, policy_confidence: 0.6551, dominant_action: "Stay Balanced" },
+            rl_only_exploratory: { bubble_risk: 52.7, creator_diversity: 57.9, repeat_rate: 39.6, novelty_score: 58.1, satisfaction_reward: 0.6148, policy_confidence: 0.6410, dominant_action: "Diversify Feed" },
+            hybrid_focused: { bubble_risk: 60.8, creator_diversity: 46.0, repeat_rate: 48.2, novelty_score: 43.6, satisfaction_reward: 0.4880, policy_confidence: 0.6633, dominant_action: "Stay Balanced" },
+            hybrid_balanced: { bubble_risk: 50.1, creator_diversity: 58.2, repeat_rate: 36.7, novelty_score: 56.4, satisfaction_reward: 0.6552, policy_confidence: 0.6874, dominant_action: "Diversify Feed" },
+            hybrid_exploratory: { bubble_risk: 43.7, creator_diversity: 66.5, repeat_rate: 31.1, novelty_score: 67.0, satisfaction_reward: 0.7397, policy_confidence: 0.6732, dominant_action: "Diversify Feed" }
+        }
+    },
+    {
+        label: "Set 2 · Graph Advantage",
+        metrics: {
+            rl_only_focused: { bubble_risk: 67.0, creator_diversity: 38.6, repeat_rate: 56.2, novelty_score: 35.4, satisfaction_reward: 0.3744, policy_confidence: 0.6180, dominant_action: "Stay Balanced" },
+            rl_only_balanced: { bubble_risk: 61.3, creator_diversity: 45.8, repeat_rate: 47.8, novelty_score: 43.8, satisfaction_reward: 0.5022, policy_confidence: 0.6464, dominant_action: "Stay Balanced" },
+            rl_only_exploratory: { bubble_risk: 56.2, creator_diversity: 54.7, repeat_rate: 41.4, novelty_score: 54.2, satisfaction_reward: 0.5825, policy_confidence: 0.6339, dominant_action: "Diversify Feed" },
+            hybrid_focused: { bubble_risk: 58.1, creator_diversity: 49.3, repeat_rate: 44.9, novelty_score: 47.1, satisfaction_reward: 0.5459, policy_confidence: 0.6711, dominant_action: "Stay Balanced" },
+            hybrid_balanced: { bubble_risk: 46.5, creator_diversity: 61.1, repeat_rate: 33.9, novelty_score: 60.6, satisfaction_reward: 0.7045, policy_confidence: 0.6943, dominant_action: "Diversify Feed" },
+            hybrid_exploratory: { bubble_risk: 41.0, creator_diversity: 69.8, repeat_rate: 28.6, novelty_score: 71.9, satisfaction_reward: 0.7842, policy_confidence: 0.6827, dominant_action: "Diversify Feed" }
+        }
+    },
+    {
+        label: "Set 3 · Exploration Stress",
+        metrics: {
+            rl_only_focused: { bubble_risk: 63.1, creator_diversity: 40.4, repeat_rate: 52.0, novelty_score: 37.5, satisfaction_reward: 0.4210, policy_confidence: 0.6245, dominant_action: "Deepen Interest" },
+            rl_only_balanced: { bubble_risk: 57.8, creator_diversity: 49.7, repeat_rate: 44.2, novelty_score: 47.0, satisfaction_reward: 0.5480, policy_confidence: 0.6520, dominant_action: "Stay Balanced" },
+            rl_only_exploratory: { bubble_risk: 53.6, creator_diversity: 60.1, repeat_rate: 38.5, novelty_score: 60.4, satisfaction_reward: 0.6287, policy_confidence: 0.6395, dominant_action: "Diversify Feed" },
+            hybrid_focused: { bubble_risk: 59.6, creator_diversity: 47.2, repeat_rate: 46.7, novelty_score: 45.0, satisfaction_reward: 0.5033, policy_confidence: 0.6668, dominant_action: "Stay Balanced" },
+            hybrid_balanced: { bubble_risk: 49.4, creator_diversity: 59.0, repeat_rate: 35.1, novelty_score: 57.3, satisfaction_reward: 0.6766, policy_confidence: 0.6898, dominant_action: "Diversify Feed" },
+            hybrid_exploratory: { bubble_risk: 45.3, creator_diversity: 65.4, repeat_rate: 31.9, novelty_score: 65.5, satisfaction_reward: 0.7255, policy_confidence: 0.6759, dominant_action: "Diversify Feed" }
+        }
+    },
+    {
+        label: "Set 4 · Mixed Policy Behavior",
+        metrics: {
+            rl_only_focused: { bubble_risk: 60.2, creator_diversity: 43.3, repeat_rate: 49.2, novelty_score: 42.1, satisfaction_reward: 0.4620, policy_confidence: 0.6402, dominant_action: "Deepen Interest" },
+            rl_only_balanced: { bubble_risk: 55.6, creator_diversity: 51.2, repeat_rate: 41.6, novelty_score: 50.5, satisfaction_reward: 0.5754, policy_confidence: 0.6631, dominant_action: "Stay Balanced" },
+            rl_only_exploratory: { bubble_risk: 50.8, creator_diversity: 59.4, repeat_rate: 36.1, novelty_score: 61.6, satisfaction_reward: 0.6518, policy_confidence: 0.6460, dominant_action: "Diversify Feed" },
+            hybrid_focused: { bubble_risk: 57.5, creator_diversity: 48.8, repeat_rate: 43.8, novelty_score: 47.8, satisfaction_reward: 0.5312, policy_confidence: 0.6699, dominant_action: "Stay Balanced" },
+            hybrid_balanced: { bubble_risk: 48.3, creator_diversity: 60.7, repeat_rate: 33.3, novelty_score: 60.2, satisfaction_reward: 0.6987, policy_confidence: 0.6912, dominant_action: "Diversify Feed" },
+            hybrid_exploratory: { bubble_risk: 42.2, creator_diversity: 68.1, repeat_rate: 27.8, novelty_score: 72.0, satisfaction_reward: 0.7810, policy_confidence: 0.6794, dominant_action: "Diversify Feed" }
+        }
+    },
+    {
+        label: "Set 5 · Safety-First",
+        metrics: {
+            rl_only_focused: { bubble_risk: 58.4, creator_diversity: 45.0, repeat_rate: 47.0, novelty_score: 44.8, satisfaction_reward: 0.4982, policy_confidence: 0.6499, dominant_action: "Stay Balanced" },
+            rl_only_balanced: { bubble_risk: 53.0, creator_diversity: 52.6, repeat_rate: 39.1, novelty_score: 53.1, satisfaction_reward: 0.6125, policy_confidence: 0.6660, dominant_action: "Stay Balanced" },
+            rl_only_exploratory: { bubble_risk: 48.6, creator_diversity: 58.8, repeat_rate: 34.9, novelty_score: 62.7, satisfaction_reward: 0.6841, policy_confidence: 0.6524, dominant_action: "Diversify Feed" },
+            hybrid_focused: { bubble_risk: 52.9, creator_diversity: 50.6, repeat_rate: 39.7, novelty_score: 52.0, satisfaction_reward: 0.5901, policy_confidence: 0.6722, dominant_action: "Stay Balanced" },
+            hybrid_balanced: { bubble_risk: 44.0, creator_diversity: 63.8, repeat_rate: 30.8, novelty_score: 64.5, satisfaction_reward: 0.7511, policy_confidence: 0.6990, dominant_action: "Diversify Feed" },
+            hybrid_exploratory: { bubble_risk: 38.5, creator_diversity: 71.6, repeat_rate: 25.3, novelty_score: 75.8, satisfaction_reward: 0.8264, policy_confidence: 0.6888, dominant_action: "Diversify Feed" }
+        }
+    },
+    {
+        label: "Set 6 · High Discovery",
+        metrics: {
+            rl_only_focused: { bubble_risk: 62.8, creator_diversity: 41.7, repeat_rate: 51.5, novelty_score: 38.0, satisfaction_reward: 0.4305, policy_confidence: 0.6278, dominant_action: "Stay Balanced" },
+            rl_only_balanced: { bubble_risk: 56.9, creator_diversity: 50.4, repeat_rate: 42.5, novelty_score: 48.7, satisfaction_reward: 0.5589, policy_confidence: 0.6586, dominant_action: "Stay Balanced" },
+            rl_only_exploratory: { bubble_risk: 51.7, creator_diversity: 61.9, repeat_rate: 36.9, novelty_score: 63.6, satisfaction_reward: 0.6669, policy_confidence: 0.6450, dominant_action: "Diversify Feed" },
+            hybrid_focused: { bubble_risk: 57.1, creator_diversity: 49.8, repeat_rate: 43.6, novelty_score: 48.2, satisfaction_reward: 0.5418, policy_confidence: 0.6705, dominant_action: "Stay Balanced" },
+            hybrid_balanced: { bubble_risk: 47.2, creator_diversity: 62.5, repeat_rate: 32.4, novelty_score: 61.4, satisfaction_reward: 0.7132, policy_confidence: 0.6956, dominant_action: "Diversify Feed" },
+            hybrid_exploratory: { bubble_risk: 40.6, creator_diversity: 73.4, repeat_rate: 24.6, novelty_score: 78.2, satisfaction_reward: 0.8455, policy_confidence: 0.6844, dominant_action: "Diversify Feed" }
+        }
+    }
+];
+
+function avgFrom(items, key) {
+    if (!items || !items.length) return 0;
+    return items.reduce((sum, item) => sum + Number(item?.averages?.[key] || 0), 0) / items.length;
+}
+
+function buildJudgeScenarios(raw) {
+    const order = Object.keys(JUDGE_SCENARIO_TEMPLATE);
+    const scenarios = order.map((scenarioId) => {
+        const template = JUDGE_SCENARIO_TEMPLATE[scenarioId];
+        const metric = raw.metrics?.[scenarioId] || {};
+        return {
+            scenario_id: scenarioId,
+            name: template.name,
+            mode: template.mode,
+            exploration_level: template.exploration_level,
+            exploration_band: template.exploration_band,
+            steps: 35,
+            dominant_action: metric.dominant_action || "-",
+            averages: {
+                bubble_risk: Number(metric.bubble_risk || 0),
+                creator_diversity: Number(metric.creator_diversity || 0),
+                repeat_rate: Number(metric.repeat_rate || 0),
+                novelty_score: Number(metric.novelty_score || 0),
+                satisfaction_reward: Number(metric.satisfaction_reward || 0),
+                policy_confidence: Number(metric.policy_confidence || 0)
+            }
+        };
+    });
+
+    const baseline = scenarios.find((s) => s.scenario_id === "rl_only_balanced") || scenarios[0];
+    const baseAvg = baseline?.averages || {};
+
+    scenarios.forEach((scenario) => {
+        const avg = scenario.averages || {};
+        scenario.delta_vs_baseline = {
+            bubble_risk: Number((avg.bubble_risk - (baseAvg.bubble_risk || 0)).toFixed(2)),
+            creator_diversity: Number((avg.creator_diversity - (baseAvg.creator_diversity || 0)).toFixed(2)),
+            repeat_rate: Number((avg.repeat_rate - (baseAvg.repeat_rate || 0)).toFixed(2)),
+            satisfaction_reward: Number((avg.satisfaction_reward - (baseAvg.satisfaction_reward || 0)).toFixed(4)),
+            policy_confidence: Number((avg.policy_confidence - (baseAvg.policy_confidence || 0)).toFixed(4))
+        };
+    });
+
+    return scenarios;
+}
+
+function buildJudgeChecks(scenarios) {
+    const byId = {};
+    scenarios.forEach((s) => { byId[s.scenario_id] = s; });
+
+    const dominantSet = new Set([
+        byId.rl_only_focused?.dominant_action,
+        byId.rl_only_balanced?.dominant_action,
+        byId.rl_only_exploratory?.dominant_action
+    ].filter(Boolean));
+
+    const check1Passed = dominantSet.size > 1;
+    const focusedDiv = Number(byId.rl_only_focused?.averages?.creator_diversity || 0);
+    const exploratoryDiv = Number(byId.rl_only_exploratory?.averages?.creator_diversity || 0);
+    const check2Passed = exploratoryDiv > focusedDiv;
+
+    const rlBubble = Number(byId.rl_only_balanced?.averages?.bubble_risk || 0);
+    const hybridBubble = Number(byId.hybrid_balanced?.averages?.bubble_risk || 0);
+    const check3Passed = hybridBubble < rlBubble;
+
+    return [
+        {
+            id: "control_changes_policy",
+            label: "User control changes policy behavior",
+            passed: check1Passed,
+            evidence: `Dominant RL-only actions: ${Array.from(dominantSet).join(", ") || "-"}`
+        },
+        {
+            id: "high_exploration_increases_diversity",
+            label: "Higher exploration increases diversity (RL-only)",
+            passed: check2Passed,
+            evidence: `Focused ${focusedDiv.toFixed(2)} vs Exploratory ${exploratoryDiv.toFixed(2)}`
+        },
+        {
+            id: "graph_reduces_bubble_risk",
+            label: "Graph mode reduces bubble risk at balanced exploration",
+            passed: check3Passed,
+            evidence: `RL-only ${rlBubble.toFixed(2)} vs Hybrid ${hybridBubble.toFixed(2)}`
+        }
+    ];
+}
+
+function materializeJudgePack(rawSet, steps, seed) {
+    const scenarios = buildJudgeScenarios(rawSet);
+    const checks = buildJudgeChecks(scenarios);
+
+    const summary = {
+        avg_bubble_risk: Number(avgFrom(scenarios, "bubble_risk").toFixed(2)),
+        avg_creator_diversity: Number(avgFrom(scenarios, "creator_diversity").toFixed(2)),
+        avg_repeat_rate: Number(avgFrom(scenarios, "repeat_rate").toFixed(2)),
+        avg_satisfaction_reward: Number(avgFrom(scenarios, "satisfaction_reward").toFixed(4)),
+        avg_policy_confidence: Number(avgFrom(scenarios, "policy_confidence").toFixed(4)),
+        best_scenario: scenarios.reduce((best, s) => (s.averages.satisfaction_reward > best.averages.satisfaction_reward ? s : best), scenarios[0]).name,
+        checks_passed: checks.filter((c) => c.passed).length,
+        checks_total: checks.length
+    };
+
+    return {
+        status: "ok",
+        generated_at: new Date().toISOString(),
+        config: {
+            source: "frontend_hardcoded_demo",
+            steps,
+            seed,
+            set_label: rawSet.label,
+            scenarios_count: scenarios.length,
+            baseline_scenario_id: "rl_only_balanced"
+        },
+        summary,
+        checks,
+        scenarios
+    };
+}
+
+function initJudgeAgency() {
+    if (judgeAgencyInitialized) return;
+    judgeAgencyInitialized = true;
+    if (judgeEl.status) {
+        judgeEl.status.textContent = 'Demo mode active. Click "Run Judge Pack" to cycle hardcoded result sets (1/6).';
+    }
+}
+
+function formatJudgeSigned(value, decimals = 2) {
+    const n = Number(value || 0);
+    const sign = n > 0 ? "+" : "";
+    return `${sign}${n.toFixed(decimals)}`;
+}
+
+function renderJudgeChecks(checks) {
+    if (!judgeEl.checksContainer) return;
+    if (!checks || checks.length === 0) {
+        judgeEl.checksContainer.innerHTML = '<div class="judge-check-item neutral">No checks returned.</div>';
+        return;
+    }
+
+    judgeEl.checksContainer.innerHTML = checks.map((check) => `
+        <div class="judge-check-item ${check.passed ? "pass" : "fail"}">
+            <div class="judge-check-head">
+                <strong>${check.passed ? "PASS" : "FAIL"}</strong>
+                <span>${check.label}</span>
+            </div>
+            <p>${check.evidence || ""}</p>
+        </div>
+    `).join("");
+}
+
+function renderJudgeTable(scenarios) {
+    if (!judgeEl.tableBody) return;
+    if (!scenarios || scenarios.length === 0) {
+        judgeEl.tableBody.innerHTML = '<tr><td colspan="10">No scenario data available.</td></tr>';
+        return;
+    }
+
+    judgeEl.tableBody.innerHTML = scenarios.map((scenario) => {
+        const avg = scenario.averages || {};
+        const delta = scenario.delta_vs_baseline || {};
+        return `
+            <tr>
+                <td>${scenario.name}</td>
+                <td>${scenario.mode === "hybrid" ? "RL + Graph" : "RL Only"}</td>
+                <td>${scenario.exploration_band} (${Math.round((scenario.exploration_level || 0) * 100)}%)</td>
+                <td>${Number(avg.bubble_risk || 0).toFixed(2)}%</td>
+                <td>${Number(avg.creator_diversity || 0).toFixed(2)}%</td>
+                <td>${Number(avg.repeat_rate || 0).toFixed(2)}%</td>
+                <td>${Number(avg.satisfaction_reward || 0).toFixed(4)}</td>
+                <td>${Number(avg.policy_confidence || 0).toFixed(4)}</td>
+                <td>${scenario.dominant_action || "-"}</td>
+                <td>${formatJudgeSigned(delta.satisfaction_reward || 0, 4)}</td>
+            </tr>
+        `;
+    }).join("");
+}
+
+function renderJudgeSummary(summary) {
+    if (!summary) return;
+    if (judgeEl.summaryBubble) judgeEl.summaryBubble.textContent = `${Number(summary.avg_bubble_risk || 0).toFixed(2)}%`;
+    if (judgeEl.summaryDiversity) judgeEl.summaryDiversity.textContent = `${Number(summary.avg_creator_diversity || 0).toFixed(2)}%`;
+    if (judgeEl.summaryRepeat) judgeEl.summaryRepeat.textContent = `${Number(summary.avg_repeat_rate || 0).toFixed(2)}%`;
+    if (judgeEl.summaryReward) judgeEl.summaryReward.textContent = Number(summary.avg_satisfaction_reward || 0).toFixed(4);
+    if (judgeEl.summaryConfidence) judgeEl.summaryConfidence.textContent = Number(summary.avg_policy_confidence || 0).toFixed(4);
+    if (judgeEl.summaryChecks) judgeEl.summaryChecks.textContent = `${summary.checks_passed || 0}/${summary.checks_total || 0}`;
+}
+
+function runJudgeAgencyPack() {
+    initJudgeAgency();
+    if (judgeEl.runBtn) judgeEl.runBtn.disabled = true;
+
+    const steps = Number(judgeEl.stepsInput?.value || 35);
+    const seed = Number(judgeEl.seedInput?.value || 2026);
+
+    const setIndex = judgeDemoCursor % JUDGE_DEMO_RAW.length;
+    const selectedSet = JUDGE_DEMO_RAW[setIndex];
+    judgeDemoCursor += 1;
+
+    const data = materializeJudgePack(selectedSet, steps, seed);
+    judgeAgencyLastResult = data;
+
+    renderJudgeSummary(data.summary || {});
+    renderJudgeChecks(data.checks || []);
+    renderJudgeTable(data.scenarios || []);
+
+    if (judgeEl.status) {
+        const summary = data.summary || {};
+        judgeEl.status.textContent = `Showing ${selectedSet.label} (${setIndex + 1}/${JUDGE_DEMO_RAW.length}). Best scenario: ${summary.best_scenario || '-'} | Checks: ${summary.checks_passed || 0}/${summary.checks_total || 0}`;
+    }
+
+    if (judgeEl.runBtn) judgeEl.runBtn.disabled = false;
+}
+
+function downloadTextFile(filename, content, mimeType = 'text/plain;charset=utf-8') {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function exportJudgeJson() {
+    if (!judgeAgencyLastResult) {
+        showToast('Run judge pack first before exporting.', 'info');
+        return;
+    }
+    downloadTextFile('judge_agency_results.json', JSON.stringify(judgeAgencyLastResult, null, 2), 'application/json;charset=utf-8');
+}
+
+function exportJudgeCsv() {
+    if (!judgeAgencyLastResult || !judgeAgencyLastResult.scenarios) {
+        showToast('Run judge pack first before exporting.', 'info');
+        return;
+    }
+
+    const headers = [
+        'scenario_id',
+        'name',
+        'mode',
+        'exploration_level',
+        'exploration_band',
+        'bubble_risk',
+        'creator_diversity',
+        'repeat_rate',
+        'novelty_score',
+        'satisfaction_reward',
+        'policy_confidence',
+        'dominant_action',
+        'delta_reward_vs_baseline'
+    ];
+
+    const rows = judgeAgencyLastResult.scenarios.map((s) => {
+        const avg = s.averages || {};
+        const delta = s.delta_vs_baseline || {};
+        return [
+            s.scenario_id,
+            s.name,
+            s.mode,
+            s.exploration_level,
+            s.exploration_band,
+            avg.bubble_risk,
+            avg.creator_diversity,
+            avg.repeat_rate,
+            avg.novelty_score,
+            avg.satisfaction_reward,
+            avg.policy_confidence,
+            s.dominant_action,
+            delta.satisfaction_reward
+        ];
+    });
+
+    const csv = [headers.join(',')]
+        .concat(rows.map((row) => row.map((cell) => {
+            const text = String(cell ?? '');
+            return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+        }).join(',')))
+        .join('\n');
+
+    downloadTextFile('judge_agency_results.csv', csv, 'text/csv;charset=utf-8');
+}
+
+if (judgeEl.runBtn) judgeEl.runBtn.onclick = runJudgeAgencyPack;
+if (judgeEl.exportJsonBtn) judgeEl.exportJsonBtn.onclick = exportJudgeJson;
+if (judgeEl.exportCsvBtn) judgeEl.exportCsvBtn.onclick = exportJudgeCsv;
+

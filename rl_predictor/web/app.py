@@ -1,9 +1,10 @@
-"""Flask backend for RL + Graph Discovery Lab demo."""
+﻿"""Flask backend for RL + Graph Discovery Lab demo."""
 
 import math
 import os
 import random
 import sys
+from datetime import datetime
 from collections import defaultdict
 
 import numpy as np
@@ -934,6 +935,204 @@ def compare():
     })
 
 
+
+def _avg(values):
+    values = list(values)
+    return float(sum(values) / len(values)) if values else 0.0
+
+
+def _run_judge_agency_scenario(mode, exploration_level, steps, seed):
+    sim = GraphDiscoverySimulator(seed=seed)
+    action_counts = {label: 0 for label in ACTION_LABELS.values()}
+    bubble_values = []
+    diversity_values = []
+    repeat_values = []
+    novelty_values = []
+    reward_values = []
+    confidence_values = []
+
+    last_snapshot = None
+    for _ in range(steps):
+        snapshot = sim.step(mode, exploration_level)
+        last_snapshot = snapshot
+        metrics = snapshot.get("metrics", {})
+        policy = snapshot.get("policy", {})
+
+        bubble_values.append(float(metrics.get("bubble_risk", 0.0)))
+        diversity_values.append(float(metrics.get("creator_diversity", 0.0)))
+        repeat_values.append(float(metrics.get("repeat_rate", 0.0)))
+        novelty_values.append(float(metrics.get("novelty_score", 0.0)))
+        reward_values.append(float(metrics.get("satisfaction_reward", 0.0)))
+        confidence_values.append(float(policy.get("confidence", 0.0)))
+
+        action_label = policy.get("final_action_label")
+        if action_label in action_counts:
+            action_counts[action_label] += 1
+
+    dominant_action = max(action_counts, key=action_counts.get) if action_counts else "-"
+
+    return {
+        "mode": mode,
+        "exploration_level": float(exploration_level),
+        "exploration_band": exploration_band(exploration_level),
+        "steps": int(steps),
+        "averages": {
+            "bubble_risk": round(_avg(bubble_values), 2),
+            "creator_diversity": round(_avg(diversity_values), 2),
+            "repeat_rate": round(_avg(repeat_values), 2),
+            "novelty_score": round(_avg(novelty_values), 2),
+            "satisfaction_reward": round(_avg(reward_values), 4),
+            "policy_confidence": round(_avg(confidence_values), 4),
+        },
+        "action_distribution": action_counts,
+        "dominant_action": dominant_action,
+        "last_path_explanation": (last_snapshot or {}).get("path_explanation", ""),
+    }
+
+
+@app.route("/api/judge/agency-pack", methods=["POST"])
+def judge_agency_pack():
+    payload = request.get_json(silent=True) or {}
+
+    raw_steps = payload.get("steps", 35)
+    raw_seed = payload.get("seed", 2026)
+
+    try:
+        steps = int(raw_steps)
+    except (TypeError, ValueError):
+        steps = 35
+    steps = max(5, min(150, steps))
+
+    try:
+        seed = int(raw_seed)
+    except (TypeError, ValueError):
+        seed = 2026
+
+    scenario_specs = [
+        {
+            "scenario_id": "rl_only_focused",
+            "name": "Focused + RL Only",
+            "mode": "rl_only",
+            "exploration_level": 0.2,
+        },
+        {
+            "scenario_id": "rl_only_balanced",
+            "name": "Balanced + RL Only",
+            "mode": "rl_only",
+            "exploration_level": 0.5,
+        },
+        {
+            "scenario_id": "rl_only_exploratory",
+            "name": "Exploratory + RL Only",
+            "mode": "rl_only",
+            "exploration_level": 0.8,
+        },
+        {
+            "scenario_id": "hybrid_focused",
+            "name": "Focused + RL + Graph",
+            "mode": "hybrid",
+            "exploration_level": 0.2,
+        },
+        {
+            "scenario_id": "hybrid_balanced",
+            "name": "Balanced + RL + Graph",
+            "mode": "hybrid",
+            "exploration_level": 0.5,
+        },
+        {
+            "scenario_id": "hybrid_exploratory",
+            "name": "Exploratory + RL + Graph",
+            "mode": "hybrid",
+            "exploration_level": 0.8,
+        },
+    ]
+
+    scenarios = []
+    for idx, spec in enumerate(scenario_specs):
+        result = _run_judge_agency_scenario(
+            mode=spec["mode"],
+            exploration_level=spec["exploration_level"],
+            steps=steps,
+            seed=seed,
+        )
+        result.update(
+            {
+                "scenario_id": spec["scenario_id"],
+                "name": spec["name"],
+            }
+        )
+        scenarios.append(result)
+
+    baseline_id = "rl_only_balanced"
+    baseline = next((s for s in scenarios if s["scenario_id"] == baseline_id), scenarios[0])
+    base_avg = baseline["averages"]
+
+    for scenario in scenarios:
+        avg = scenario["averages"]
+        scenario["delta_vs_baseline"] = {
+            "bubble_risk": round(avg["bubble_risk"] - base_avg["bubble_risk"], 2),
+            "creator_diversity": round(avg["creator_diversity"] - base_avg["creator_diversity"], 2),
+            "repeat_rate": round(avg["repeat_rate"] - base_avg["repeat_rate"], 2),
+            "satisfaction_reward": round(avg["satisfaction_reward"] - base_avg["satisfaction_reward"], 4),
+            "policy_confidence": round(avg["policy_confidence"] - base_avg["policy_confidence"], 4),
+        }
+
+    by_id = {s["scenario_id"]: s for s in scenarios}
+    dominant_rl_only = {
+        by_id["rl_only_focused"]["dominant_action"],
+        by_id["rl_only_balanced"]["dominant_action"],
+        by_id["rl_only_exploratory"]["dominant_action"],
+    }
+
+    checks = [
+        {
+            "id": "control_changes_policy",
+            "label": "User control changes policy behavior",
+            "passed": len(dominant_rl_only) > 1,
+            "evidence": f"Dominant RL-only actions: {', '.join(sorted(dominant_rl_only))}",
+        },
+        {
+            "id": "high_exploration_increases_diversity",
+            "label": "Higher exploration increases diversity (RL-only)",
+            "passed": by_id["rl_only_exploratory"]["averages"]["creator_diversity"] > by_id["rl_only_focused"]["averages"]["creator_diversity"],
+            "evidence": f"Focused {by_id['rl_only_focused']['averages']['creator_diversity']} vs Exploratory {by_id['rl_only_exploratory']['averages']['creator_diversity']}",
+        },
+        {
+            "id": "graph_reduces_bubble_risk",
+            "label": "Graph mode reduces bubble risk at balanced exploration",
+            "passed": by_id["hybrid_balanced"]["averages"]["bubble_risk"] < by_id["rl_only_balanced"]["averages"]["bubble_risk"],
+            "evidence": f"RL-only {by_id['rl_only_balanced']['averages']['bubble_risk']} vs Hybrid {by_id['hybrid_balanced']['averages']['bubble_risk']}",
+        },
+    ]
+
+    best_scenario = max(scenarios, key=lambda s: s["averages"]["satisfaction_reward"])
+    summary = {
+        "avg_bubble_risk": round(_avg(s["averages"]["bubble_risk"] for s in scenarios), 2),
+        "avg_creator_diversity": round(_avg(s["averages"]["creator_diversity"] for s in scenarios), 2),
+        "avg_repeat_rate": round(_avg(s["averages"]["repeat_rate"] for s in scenarios), 2),
+        "avg_satisfaction_reward": round(_avg(s["averages"]["satisfaction_reward"] for s in scenarios), 4),
+        "avg_policy_confidence": round(_avg(s["averages"]["policy_confidence"] for s in scenarios), 4),
+        "best_scenario": best_scenario["name"],
+        "checks_passed": sum(1 for c in checks if c["passed"]),
+        "checks_total": len(checks),
+    }
+
+    return jsonify(
+        {
+            "status": "ok",
+            "generated_at": datetime.now().isoformat(),
+            "config": {
+                "steps": steps,
+                "seed": seed,
+                "scenarios_count": len(scenarios),
+                "baseline_scenario_id": baseline_id,
+            },
+            "summary": summary,
+            "checks": checks,
+            "scenarios": scenarios,
+        }
+    )
+
 @app.route("/api/graph/init", methods=["POST"])
 def graph_init():
     payload = request.get_json(silent=True) or {}
@@ -979,3 +1178,7 @@ def journey_step():
 if __name__ == "__main__":
     print("\nDiscoverSense AI dashboard running at: http://localhost:5000\n")
     app.run(debug=True, port=5000, use_reloader=False)
+
+
+
+

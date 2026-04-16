@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -24,6 +24,7 @@
                 <li><a href="#" class="tab-link" data-tab="journey-section">Feed Journey</a></li>
                 <li><a href="#" class="tab-link" data-tab="comparison-section">Policy Benchmark</a></li>
                 <li><a href="#" class="tab-link" data-tab="graph-section">Graph Discovery Lab</a></li>
+                <li><a href="#" class="tab-link" data-tab="judge-agency-section">Judge Agency Test</a></li>
                 <li><a href="#" class="tab-link" data-tab="architecture-section">How It Works</a></li>
             </ul>
             <div class="nav-badges">
@@ -509,6 +510,75 @@
             </div>
         </section>
 
+        <section id="judge-agency-section" class="tab-pane">
+            <div class="section-header">
+                <span class="section-tag">Judge Agency Test</span>
+                <h2>One-Click User Control Evaluation Pack</h2>
+                <p>Run a fixed scenario matrix and verify that user agency controls measurably change recommendation outcomes.</p>
+            </div>
+
+            <div class="judge-agency-wrap">
+                <div class="glass-card judge-control-card">
+                    <div class="judge-control-grid">
+                        <div class="judge-field">
+                            <label for="judge-steps">Steps per scenario</label>
+                            <input id="judge-steps" type="number" min="5" max="150" value="35">
+                        </div>
+                        <div class="judge-field">
+                            <label for="judge-seed">Seed</label>
+                            <input id="judge-seed" type="number" value="2026">
+                        </div>
+                        <div class="judge-actions">
+                            <button id="judge-run-pack" class="primary-btn pulse-glow">Run Judge Pack</button>
+                            <button id="judge-export-json" class="sec-btn">Export JSON</button>
+                            <button id="judge-export-csv" class="ghost-btn">Export CSV</button>
+                        </div>
+                    </div>
+                    <p id="judge-pack-status" class="judge-pack-status">Ready. Click "Run Judge Pack" to evaluate 6 fixed scenarios.</p>
+                </div>
+
+                <div class="judge-summary-grid">
+                    <div class="glass-card judge-metric-card"><span>Avg Bubble Risk</span><strong id="judge-summary-bubble">-</strong></div>
+                    <div class="glass-card judge-metric-card"><span>Avg Creator Diversity</span><strong id="judge-summary-diversity">-</strong></div>
+                    <div class="glass-card judge-metric-card"><span>Avg Repeat Rate</span><strong id="judge-summary-repeat">-</strong></div>
+                    <div class="glass-card judge-metric-card"><span>Avg Satisfaction Reward</span><strong id="judge-summary-reward">-</strong></div>
+                    <div class="glass-card judge-metric-card"><span>Avg Policy Confidence</span><strong id="judge-summary-confidence">-</strong></div>
+                    <div class="glass-card judge-metric-card"><span>Checks Passed</span><strong id="judge-summary-checks">-</strong></div>
+                </div>
+
+                <div class="glass-card judge-check-card">
+                    <div class="judge-panel-title">Agency Impact Checks</div>
+                    <div id="judge-checks" class="judge-check-list">
+                        <div class="judge-check-item neutral">Run the judge pack to evaluate agency impact checks.</div>
+                    </div>
+                </div>
+
+                <div class="glass-card judge-table-card">
+                    <div class="judge-panel-title">Scenario Results (6 Fixed Runs)</div>
+                    <div class="table-responsive">
+                        <table class="judge-table">
+                            <thead>
+                                <tr>
+                                    <th>Scenario</th>
+                                    <th>Mode</th>
+                                    <th>Exploration</th>
+                                    <th>Bubble Risk</th>
+                                    <th>Diversity</th>
+                                    <th>Repeat Rate</th>
+                                    <th>Satisfaction</th>
+                                    <th>Confidence</th>
+                                    <th>Dominant Action</th>
+                                    <th>Delta Reward</th>
+                                </tr>
+                            </thead>
+                            <tbody id="judge-scenario-table-body">
+                                <tr><td colspan="10">No run yet.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
         <section id="architecture-section" class="tab-pane">
             <div class="section-header">
                 <h2>How the Simulation Works</h2>
@@ -516,25 +586,53 @@
             </div>
             <div class="arch-grid">
                 <div class="glass-card arch-card">
-                    <h3>State Signals (10-D)</h3>
+                    <h3>State Signals (10-D): Exact RL Input Vector</h3>
                     <ul class="feat-list">
-                        <li>Novelty Score and Repeat Exposure</li>
-                        <li>Creator Diversity and Topic Drift</li>
-                        <li>Bubble Risk and Cognitive Load</li>
-                        <li>Engagement Depth and Session Fatigue</li>
+                        <li>[0] Novelty Score</li>
+                        <li>[1] Repeat Exposure</li>
+                        <li>[2] Interest Momentum</li>
+                        <li>[3] Creator Diversity</li>
+                        <li>[4] Session Fatigue</li>
+                        <li>[5] Topic Drift</li>
+                        <li>[6] Engagement Depth</li>
+                        <li>[7] Serendipity Potential</li>
+                        <li>[8] Bubble Risk</li>
+                        <li>[9] Cognitive Load</li>
+                        <li>Input format: 10-feature float vector (used every step by the RL policy)</li>
                     </ul>
                 </div>
                 <div class="glass-card arch-card">
-                    <h3>Policy Loop</h3>
-                    <p>At each step, the agent reads user-context signals, picks one action (Diversify, Stay Balanced, Deepen Interest), then receives reward feedback to improve future recommendations.</p>
+                    <h3>Policy Loop + Action IDs</h3>
+                    <ul class="feat-list">
+                        <li>Action 0 -> Diversify Feed</li>
+                        <li>Action 1 -> Stay Balanced</li>
+                        <li>Action 2 -> Deepen Interest</li>
+                        <li>Exploration level shifts action preference using key signals: state[0], state[6], state[8]</li>
+                        <li>Baseline comparator score: 0.4 * state[1] + 0.4 * state[2] + 0.2 * state[0]</li>
+                    </ul>
                 </div>
                 <div class="glass-card arch-card">
-                    <h3>Reward Philosophy</h3>
+                    <h3>Reward Philosophy: Exact Numeric Rules</h3>
                     <ul class="feat-list">
-                        <li>Aligned Recommendation: +1.0</li>
-                        <li>Early Fatigue Prevention: +0.5</li>
-                        <li>High-Confidence Alignment: +0.5</li>
-                        <li>Misaligned Recommendation: -1.0</li>
+                        <li>If prediction == 1 and actual == 1 -> reward = +0.5</li>
+                        <li>If prediction matches actual direction -> +1.0</li>
+                        <li>Early intervention bonus (is_early) -> +0.5</li>
+                        <li>High confidence bonus (confidence &gt; 0.8) -> +0.5</li>
+                        <li>Opposite-direction miss -> -1.0</li>
+                        <li>Near miss (balanced vs directional) -> -0.2</li>
+                    </ul>
+                </div>
+                <div class="glass-card arch-card">
+                    <h3>Live Metrics Exposed During Simulation</h3>
+                    <ul class="feat-list">
+                        <li>prediction, prediction_label, confidence</li>
+                        <li>actual_trend, actual_label</li>
+                        <li>reward, total reward, accuracy, streak</li>
+                        <li>reward_breakdown.decision_match (0/1)</li>
+                        <li>reward_breakdown.early_diversity_bonus (0/1)</li>
+                        <li>reward_breakdown.high_confidence_bonus (0/1)</li>
+                        <li>reward_breakdown.mismatch_penalty (0/1)</li>
+                        <li>reward_breakdown.total (numeric)</li>
                     </ul>
                 </div>
             </div>
@@ -549,3 +647,5 @@
     <script src="script.js"></script>
 </body>
 </html>
+
+
