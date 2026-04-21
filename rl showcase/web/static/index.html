@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DiscoverSense AI | RL Content Discovery Simulator</title>
+    <meta name="description" content="A reinforcement-learning simulation that helps users break repetitive feeds while keeping personalization and control.">
+    <link rel="stylesheet" href="style.css?v=2">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+
+    <nav id="navbar">
+        <div class="nav-inner">
+            <div class="nav-brand">
+                <a href="#" class="logo tab-link active" data-tab="demo-section">DiscoverSense<span>AI</span></a>
+                <span class="nav-brand-tag">Intentional Discovery Simulator</span>
+            </div>
+            <ul class="nav-links" aria-label="Primary sections">
+                <li><a href="#" class="tab-link active" data-tab="demo-section">Discovery Terminal</a></li>
+            </ul>
+            <div class="nav-badges">
+                <span class="badge cyan">Deep Q-Network</span>
+                <span class="badge gold">Algorithm Fatigue Hackathon</span>
+            </div>
+        </div>
+    </nav>
+
+    <main class="tab-container">
+        <section id="demo-section" class="tab-pane active">
+            <div class="section-header">
+                <span class="section-tag">Discovery Terminal</span>
+                <h2>Intentional Discovery Simulation</h2>
+                <p>Run the RL policy step-by-step and watch how recommendations shift between focus, balance, and diversification.</p>
+            </div>
+
+            <div class="live-stats-bar">
+                <div class="live-stat">
+                    <span class="live-stat-val" id="stat-step">0</span>
+                    <span class="live-stat-label">Steps Run</span>
+                </div>
+                <div class="live-stat accent-green">
+                    <span class="live-stat-val" id="stat-acc">-</span>
+                    <span class="live-stat-label">Discovery Match</span>
+                </div>
+                <div class="live-stat accent-cyan">
+                    <span class="live-stat-val" id="stat-reward">0.00</span>
+                    <span class="live-stat-label">User Value Reward</span>
+                </div>
+                <div class="live-stat accent-purple">
+                    <span class="live-stat-val" id="stat-correct">0</span>
+                    <span class="live-stat-label">Aligned Steps</span>
+                </div>
+                <div class="live-stat">
+                    <span class="live-stat-val" id="stat-streak">0</span>
+                    <span class="live-stat-label">Current Streak</span>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="panel glass-card">
+                    <div class="panel-title">
+                        <span class="panel-icon">&#9679;</span>
+                        Discovery Signal Feed
+                        <span class="live-dot" id="live-indicator">IDLE</span>
+                    </div>
+                    <div id="signal-bars" class="signal-bars"></div>
+                    <div class="state-vec-box">
+                        <span class="state-vec-label">Behavior State Vector</span>
+                        <code id="state-vector">[-]</code>
+                    </div>
+                </div>
+
+                <div class="panel center-col">
+                    <div class="glass-card prediction-card">
+                        <div class="card-header">
+                            <span class="step-pill" id="step-count">STEP 0</span>
+                            <span id="confidence-badge" class="conf-badge">- CONF</span>
+                        </div>
+                        <div id="prediction-display" class="prediction-display neutral">
+                            <span id="prediction-text">STANDBY</span>
+                        </div>
+                        <div class="result-row" id="result-row">
+                            <span class="result-tag" id="actual-label">-</span>
+                            <span class="result-sep">vs</span>
+                            <span class="result-tag predicted" id="predicted-label">-</span>
+                            <span class="result-verdict" id="verdict-badge">-</span>
+                        </div>
+                        <div class="reasoning-box">
+                            <div class="brain-icon">&#129504;</div>
+                            <div>
+                                <h4>Policy Reasoning</h4>
+                                <p id="explanation-text">Waiting for discovery data stream...</p>
+                                <button class="feedback-btn" onclick="showToast('Preference feedback logged for this simulation.', 'success')">&#128077; Mark Recommendation Helpful</button>
+                            </div>
+                        </div>
+                        <div class="state-vec-box">
+                            <span class="state-vec-label">Exploration Level: <strong id="exploration-level-label">Balanced</strong> (<span id="exploration-level-value">50</span>%)</span>
+                            <input id="exploration-level" type="range" min="0" max="100" value="50">
+                            <small>Lower values keep feed focused. Higher values push diverse discovery.</small>
+                        </div>
+                        <div class="controls">
+                            <button id="step-btn" class="primary-btn pulse-glow">Apply Next Recommendation</button>
+                            <button id="auto-btn" class="sec-btn">Auto Run</button>
+                            <button id="reset-btn" class="ghost-btn">Reset</button>
+                        </div>
+                    </div>
+
+                    <div class="glass-card chart-card">
+                        <div class="chart-title">
+                            Actual Need vs RL Recommendation
+                            <span class="chart-legend"><span class="leg-dot white"></span>Actual <span class="leg-dot green"></span>RL Policy</span>
+                        </div>
+                        <div id="trend-chart" style="height: 220px;"></div>
+                    </div>
+                </div>
+
+                <div class="panel glass-card">
+                    <div class="panel-title">
+                        <span class="panel-icon reward-icon">&#9650;</span>
+                        Reward Feedback
+                    </div>
+                    <div class="reward-display">
+                        <span class="reward-num" id="reward-pulse">+0.00</span>
+                        <span class="reward-label">Step Reward</span>
+                    </div>
+                    <div class="reward-bar-section">
+                        <h4 class="sub-label">Reward Breakdown</h4>
+                        <div id="reward-bars"></div>
+                    </div>
+                    <div class="log-section">
+                        <h4 class="sub-label">Decision Log</h4>
+                        <div id="log-container" class="log-container"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="journey-section" class="tab-pane">
+            <div class="section-header">
+                <span class="section-tag">Feed Journey</span>
+                <h2>Same User. Two Very Different Feeds.</h2>
+                <p>Watch an engagement-only feed narrow into repetition while the RL-guided feed keeps personalization and reopens meaningful discovery.</p>
+            </div>
+
+            <div class="journey-top-grid">
+                <div class="glass-card journey-persona-card">
+                    <div class="journey-meta-row">
+                        <span class="journey-card-tag">Shared Persona</span>
+                        <span class="journey-sync-pill">Same user, same starting point</span>
+                    </div>
+                    <h3 id="journey-persona-name">Maya</h3>
+                    <p id="journey-persona-summary">A creative technologist trying to escape repetitive AI productivity content without losing relevance.</p>
+                    <div class="journey-persona-grid">
+                        <div class="journey-persona-detail">
+                            <span>Core Interests</span>
+                            <strong id="journey-core-interests">AI Tools, Design Systems, Creative Coding</strong>
+                        </div>
+                        <div class="journey-persona-detail">
+                            <span>Current Fatigue</span>
+                            <strong id="journey-fatigue-signal">Too many near-identical AI clips.</strong>
+                        </div>
+                        <div class="journey-persona-detail full">
+                            <span>Session Goal</span>
+                            <strong id="journey-persona-intent">Stay personalized while reopening adjacent discovery.</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card journey-control-card">
+                    <div class="journey-control-head">
+                        <div>
+                            <span class="journey-card-tag">Live Comparison</span>
+                            <h3 id="journey-step-indicator">STEP 0 / 12</h3>
+                        </div>
+                        <span class="journey-sync-pill accent">Judge View</span>
+                    </div>
+                    <p id="journey-narration" class="journey-narration">Run the journey step-by-step to watch the same user split into two very different feed experiences.</p>
+                    <div class="journey-delta-grid">
+                        <div class="journey-delta-card">
+                            <span>Bubble Risk Gap</span>
+                            <strong id="journey-delta-bubble">0.0</strong>
+                        </div>
+                        <div class="journey-delta-card">
+                            <span>Diversity Gap</span>
+                            <strong id="journey-delta-diversity">0.0</strong>
+                        </div>
+                        <div class="journey-delta-card">
+                            <span>Repeat Gap</span>
+                            <strong id="journey-delta-repeat">0.0</strong>
+                        </div>
+                        <div class="journey-delta-card">
+                            <span>Satisfaction Gap</span>
+                            <strong id="journey-delta-satisfaction">0.0</strong>
+                        </div>
+                    </div>
+                    <div class="state-vec-box">
+                        <span class="state-vec-label">User Agency Level: <strong id="journey-exploration-label">Balanced</strong> (<span id="journey-exploration-value">55</span>%)</span>
+                        <input id="journey-exploration-level" type="range" min="0" max="100" value="55">
+                        <small>Higher values let the RL lane push farther into adjacent interests without dropping relevance.</small>
+                    </div>
+                    <div class="controls">
+                        <button id="journey-step-btn" class="primary-btn pulse-glow">Next Feed Step</button>
+                        <button id="journey-auto-btn" class="sec-btn">Auto Run</button>
+                        <button id="journey-reset-btn" class="ghost-btn">Reset Journey</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="journey-lanes">
+                <div class="glass-card journey-lane baseline">
+                    <div class="journey-lane-head">
+                        <div>
+                            <span class="journey-lane-tag danger">Engagement-Only Feed</span>
+                            <h3>What a sticky algorithm keeps serving</h3>
+                        </div>
+                        <span id="journey-baseline-policy" class="journey-policy-pill">Engagement Maximizer</span>
+                    </div>
+                    <div class="journey-current-card">
+                        <div class="journey-current-meta">
+                            <span id="journey-baseline-tag" class="journey-current-tag">Waiting</span>
+                        </div>
+                        <h4 id="journey-baseline-title">Waiting for first feed step.</h4>
+                        <p class="journey-current-byline"><span id="journey-baseline-topic">-</span> by <span id="journey-baseline-creator">-</span></p>
+                        <p id="journey-baseline-reason" class="journey-current-reason">The baseline lane will show how engagement-driven ranking narrows the feed over time.</p>
+                    </div>
+                    <div class="journey-metric-grid">
+                        <div class="journey-metric-card">
+                            <span>Repeat Rate</span>
+                            <strong id="journey-baseline-repeat">0.0%</strong>
+                        </div>
+                        <div class="journey-metric-card">
+                            <span>Topic Diversity</span>
+                            <strong id="journey-baseline-diversity">0.0%</strong>
+                        </div>
+                        <div class="journey-metric-card">
+                            <span>Bubble Risk</span>
+                            <strong id="journey-baseline-bubble">0.0%</strong>
+                        </div>
+                        <div class="journey-metric-card">
+                            <span>Satisfaction</span>
+                            <strong id="journey-baseline-satisfaction">0.0%</strong>
+                        </div>
+                    </div>
+                    <div class="journey-trail-block">
+                        <div class="journey-trail-title">Recent Feed Trail</div>
+                        <div id="journey-baseline-trail" class="journey-trail-list">
+                            <div class="journey-trail-empty">No recommendations yet.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card journey-lane rl">
+                    <div class="journey-lane-head">
+                        <div>
+                            <span class="journey-lane-tag success">RL Discovery Feed</span>
+                            <h3>What intentional discovery feels like</h3>
+                        </div>
+                        <span id="journey-rl-policy" class="journey-policy-pill success">Stay Balanced</span>
+                    </div>
+                    <div class="journey-current-card">
+                        <div class="journey-current-meta">
+                            <span id="journey-rl-tag" class="journey-current-tag success">Waiting</span>
+                        </div>
+                        <h4 id="journey-rl-title">Waiting for first feed step.</h4>
+                        <p class="journey-current-byline"><span id="journey-rl-topic">-</span> by <span id="journey-rl-creator">-</span></p>
+                        <p id="journey-rl-reason" class="journey-current-reason">The RL lane will keep the session relevant while reopening adjacent interests.</p>
+                    </div>
+                    <div class="journey-metric-grid">
+                        <div class="journey-metric-card">
+                            <span>Repeat Rate</span>
+                            <strong id="journey-rl-repeat">0.0%</strong>
+                        </div>
+                        <div class="journey-metric-card">
+                            <span>Topic Diversity</span>
+                            <strong id="journey-rl-diversity">0.0%</strong>
+                        </div>
+                        <div class="journey-metric-card">
+                            <span>Bubble Risk</span>
+                            <strong id="journey-rl-bubble">0.0%</strong>
+                        </div>
+                        <div class="journey-metric-card">
+                            <span>Satisfaction</span>
+                            <strong id="journey-rl-satisfaction">0.0%</strong>
+                        </div>
+                    </div>
+                    <div class="journey-trail-block">
+                        <div class="journey-trail-title">Recent Feed Trail</div>
+                        <div id="journey-rl-trail" class="journey-trail-list">
+                            <div class="journey-trail-empty">No recommendations yet.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="comparison-section" class="tab-pane">
+            <div class="section-header">
+                <span class="section-tag">Policy Benchmark</span>
+                <h2>RL Discovery Policy vs Engagement-Only Baseline</h2>
+                <p>Both policies run on the same 500 simulated steps. RL optimizes long-term user value while baseline over-optimizes short-term engagement.</p>
+            </div>
+
+            <div class="compare-launch">
+                <button id="run-compare-btn" class="primary-btn pulse-glow">&#9889; Run Discovery Benchmark (500 Steps)</button>
+            </div>
+
+            <div id="compare-loading" class="training-status hidden">
+                <div class="neural-pulse"><div class="pulse-core">&#9876;</div></div>
+                <div class="status-text">
+                    <h3>Running Policy Benchmark...</h3>
+                    <p>Comparing RL and engagement-only behavior on identical discovery states.</p>
+                </div>
+            </div>
+
+            <div id="compare-results" class="hidden">
+                <div class="comparison-grid">
+                    <div class="glass-card compare-card">
+                        <div class="compare-card-icon">&#128202;</div>
+                        <h3>Engagement-Only Baseline</h3>
+                        <div class="big-stat">
+                            <span class="big-num red" id="ml-acc-num">0%</span>
+                            <span class="big-label">Discovery Match</span>
+                        </div>
+                        <div class="compare-details">
+                            <div class="compare-detail-row"><span>Matched Outcomes</span><span id="ml-correct">0</span></div>
+                            <div class="compare-detail-row"><span>User Value Reward</span><span id="ml-reward">0</span></div>
+                            <div class="compare-detail-row"><span>Steps Tested</span><span id="ml-steps">0</span></div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card compare-card vs-card">
+                        <div class="vs-badge">VS</div>
+                        <div class="gain-display">
+                            <span class="gain-num" id="edge-gain-num">+0%</span>
+                            <span class="gain-label">Discovery Match Edge</span>
+                        </div>
+                        <div class="gain-display" style="margin-top: 1.5rem;">
+                            <span class="gain-num reward-edge" id="reward-edge-num">+0</span>
+                            <span class="gain-label">User Value Reward Edge</span>
+                        </div>
+                    </div>
+
+                    <div class="glass-card compare-card">
+                        <div class="compare-card-icon">&#129504;</div>
+                        <h3>RL Discovery Policy</h3>
+                        <div class="big-stat">
+                            <span class="big-num green" id="dqn-acc-num">0%</span>
+                            <span class="big-label">Discovery Match</span>
+                        </div>
+                        <div class="compare-details">
+                            <div class="compare-detail-row"><span>Matched Outcomes</span><span id="dqn-correct">0</span></div>
+                            <div class="compare-detail-row"><span>User Value Reward</span><span id="dqn-reward">0</span></div>
+                            <div class="compare-detail-row"><span>Steps Tested</span><span id="dqn-steps">0</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card chart-card" style="max-width: 1000px; margin: 2rem auto;">
+                    <h3>&#128202; Rolling Discovery Match (20-step window)</h3>
+                    <p style="color: var(--text-dim); font-size: 0.85rem; margin-bottom: 1rem;">Green = RL Discovery Policy | Red = Engagement-Only Baseline</p>
+                    <div id="compare-chart" style="height: 300px;"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="graph-section" class="tab-pane">
+            <div class="section-header">
+                <span class="section-tag">Graph Discovery Lab</span>
+                <h2>RL + Graph DB Context for Transparent Recommendations</h2>
+                <p>This tab simulates a graph database memory layer where recommendations are explained through relationship paths, not just black-box scores.</p>
+            </div>
+
+            <div class="graph-kpi-grid">
+                <div class="glass-card graph-kpi-card">
+                    <span class="graph-kpi-label">Novelty Score</span>
+                    <span class="graph-kpi-value" id="graph-kpi-novelty">0.0%</span>
+                </div>
+                <div class="glass-card graph-kpi-card">
+                    <span class="graph-kpi-label">Bubble Risk</span>
+                    <span class="graph-kpi-value" id="graph-kpi-bubble">0.0%</span>
+                </div>
+                <div class="glass-card graph-kpi-card">
+                    <span class="graph-kpi-label">Creator Diversity</span>
+                    <span class="graph-kpi-value" id="graph-kpi-diversity">0.0%</span>
+                </div>
+                <div class="glass-card graph-kpi-card">
+                    <span class="graph-kpi-label">Repeat Rate</span>
+                    <span class="graph-kpi-value" id="graph-kpi-repeat">0.0%</span>
+                </div>
+                <div class="glass-card graph-kpi-card">
+                    <span class="graph-kpi-label">Satisfaction Reward</span>
+                    <span class="graph-kpi-value" id="graph-kpi-reward">0.00</span>
+                </div>
+            </div>
+
+            <div class="graph-main-layout">
+                <div class="glass-card graph-network-card">
+                    <div class="graph-panel-title">
+                        <span>Graph Memory Network</span>
+                        <span class="step-pill" id="graph-step-indicator">STEP 0</span>
+                    </div>
+                    <div id="graph-network-chart" style="height: 420px;"></div>
+                </div>
+
+                <div class="graph-side-col">
+                    <div class="glass-card graph-controls-card">
+                        <div class="graph-panel-title">
+                            <span>Simulation Controls</span>
+                        </div>
+                        <div class="graph-control-row">
+                            <label for="graph-mode-select">Mode</label>
+                            <select id="graph-mode-select">
+                                <option value="hybrid">RL + Graph Context (Recommended)</option>
+                                <option value="rl_only">RL Only</option>
+                            </select>
+                        </div>
+                        <div class="graph-control-row">
+                            <label for="graph-exploration-level">Exploration Level: <strong id="graph-exploration-label">Balanced</strong> (<span id="graph-exploration-value">50</span>%)</label>
+                            <input id="graph-exploration-level" type="range" min="0" max="100" value="50">
+                        </div>
+                        <div class="controls">
+                            <button id="graph-step-btn" class="primary-btn">Run Graph Step</button>
+                            <button id="graph-auto-btn" class="sec-btn">Auto Run</button>
+                            <button id="graph-reset-btn" class="ghost-btn">Reset Graph Session</button>
+                        </div>
+                    </div>
+
+                    <div class="glass-card graph-insight-card">
+                        <div class="graph-panel-title">
+                            <span>Recommendation Path</span>
+                        </div>
+                        <p id="graph-path-reason">Waiting for first graph-backed recommendation.</p>
+                        <ul id="graph-path-list" class="graph-path-list">
+                            <li>No traversal yet.</li>
+                        </ul>
+                        <div class="graph-reco-meta">
+                            <div><span>Action</span><strong id="graph-reco-action">-</strong></div>
+                            <div><span>Topic</span><strong id="graph-reco-topic">-</strong></div>
+                            <div><span>Creator</span><strong id="graph-reco-creator">-</strong></div>
+                            <div><span>Content</span><strong id="graph-reco-content">-</strong></div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card graph-delta-card">
+                        <div class="graph-panel-title">
+                            <span>Mode Delta (Current vs Other)</span>
+                        </div>
+                        <div class="graph-delta-row"><span>Bubble Risk Improvement</span><strong id="graph-delta-bubble">0.0</strong></div>
+                        <div class="graph-delta-row"><span>Diversity Delta</span><strong id="graph-delta-diversity">0.0</strong></div>
+                        <div class="graph-delta-row"><span>Reward Delta</span><strong id="graph-delta-reward">0.00</strong></div>
+                    </div>
+
+                    <div class="glass-card graph-log-card">
+                        <div class="graph-panel-title">
+                            <span>Graph Event Log</span>
+                        </div>
+                        <div id="graph-log-container" class="graph-log-container"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card graph-outcome-card">
+                <div class="graph-panel-title">
+                    <span>RL Only vs RL + Graph Context</span>
+                </div>
+                <div id="graph-outcome-chart" style="height: 280px;"></div>
+            </div>
+
+            <div class="graph-note">
+                <p><strong>Graph DB Simulation Note:</strong> This demo uses an in-memory graph store with a Neo4j-ready node/edge schema (`User`, `Topic`, `Creator`, `Content`) to keep the showcase fast and deterministic.</p>
+            </div>
+        </section>
+
+        <section id="judge-agency-section" class="tab-pane">
+            <div class="section-header">
+                <span class="section-tag">Judge Agency Test</span>
+                <h2>One-Click User Control Evaluation Pack</h2>
+                <p>Run a fixed scenario matrix and verify that user agency controls measurably change recommendation outcomes.</p>
+            </div>
+
+            <div class="judge-agency-wrap">
+                <div class="glass-card judge-control-card">
+                    <div class="judge-control-grid">
+                        <div class="judge-field">
+                            <label for="judge-steps">Steps per scenario</label>
+                            <input id="judge-steps" type="number" min="5" max="150" value="35">
+                        </div>
+                        <div class="judge-field">
+                            <label for="judge-seed">Seed</label>
+                            <input id="judge-seed" type="number" value="2026">
+                        </div>
+                        <div class="judge-actions">
+                            <button id="judge-run-pack" class="primary-btn pulse-glow">Run Judge Pack</button>
+                            <button id="judge-export-json" class="sec-btn">Export JSON</button>
+                            <button id="judge-export-csv" class="ghost-btn">Export CSV</button>
+                        </div>
+                    </div>
+                    <p id="judge-pack-status" class="judge-pack-status">Ready. Click "Run Judge Pack" to evaluate 6 fixed scenarios.</p>
+                </div>
+
+                <div class="judge-summary-grid">
+                    <div class="glass-card judge-metric-card"><span>Avg Bubble Risk</span><strong id="judge-summary-bubble">-</strong></div>
+                    <div class="glass-card judge-metric-card"><span>Avg Creator Diversity</span><strong id="judge-summary-diversity">-</strong></div>
+                    <div class="glass-card judge-metric-card"><span>Avg Repeat Rate</span><strong id="judge-summary-repeat">-</strong></div>
+                    <div class="glass-card judge-metric-card"><span>Avg Satisfaction Reward</span><strong id="judge-summary-reward">-</strong></div>
+                    <div class="glass-card judge-metric-card"><span>Avg Policy Confidence</span><strong id="judge-summary-confidence">-</strong></div>
+                    <div class="glass-card judge-metric-card"><span>Checks Passed</span><strong id="judge-summary-checks">-</strong></div>
+                </div>
+
+                <div class="glass-card judge-check-card">
+                    <div class="judge-panel-title">Agency Impact Checks</div>
+                    <div id="judge-checks" class="judge-check-list">
+                        <div class="judge-check-item neutral">Run the judge pack to evaluate agency impact checks.</div>
+                    </div>
+                </div>
+
+                <div class="glass-card judge-table-card">
+                    <div class="judge-panel-title">Scenario Results (6 Fixed Runs)</div>
+                    <div class="table-responsive">
+                        <table class="judge-table">
+                            <thead>
+                                <tr>
+                                    <th>Scenario</th>
+                                    <th>Mode</th>
+                                    <th>Exploration</th>
+                                    <th>Bubble Risk</th>
+                                    <th>Diversity</th>
+                                    <th>Repeat Rate</th>
+                                    <th>Satisfaction</th>
+                                    <th>Confidence</th>
+                                    <th>Dominant Action</th>
+                                    <th>Delta Reward</th>
+                                </tr>
+                            </thead>
+                            <tbody id="judge-scenario-table-body">
+                                <tr><td colspan="10">No run yet.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="adaptive-section" class="tab-pane">
+            <div class="section-header">
+                <span class="section-tag">Adaptive Discovery Path</span>
+                <h2>Working No-API Personalized Reels Path</h2>
+                <p>Live local simulation with state -> action -> reward updates. No backend call, no latency, fully judge-ready.</p>
+            </div>
+
+            <div class="live-stats-bar">
+                <div class="live-stat">
+                    <span class="live-stat-val" id="adaptive-bubble">32.0%</span>
+                    <span class="live-stat-label">Bubble Risk</span>
+                </div>
+                <div class="live-stat accent-green">
+                    <span class="live-stat-val" id="adaptive-diversity">68.0%</span>
+                    <span class="live-stat-label">Creator Diversity</span>
+                </div>
+                <div class="live-stat accent-cyan">
+                    <span class="live-stat-val" id="adaptive-repeat">22.0%</span>
+                    <span class="live-stat-label">Repeat Rate</span>
+                </div>
+                <div class="live-stat accent-purple">
+                    <span class="live-stat-val" id="adaptive-satisfaction">0.840</span>
+                    <span class="live-stat-label">Satisfaction</span>
+                </div>
+                <div class="live-stat">
+                    <span class="live-stat-val" id="adaptive-fatigue">19.0%</span>
+                    <span class="live-stat-label">Fatigue Risk</span>
+                </div>
+            </div>
+
+            <div class="dashboard-grid" style="grid-template-columns: 280px 1fr 340px;">
+                <div class="panel glass-card">
+                    <div class="panel-title">
+                        <span class="panel-icon">&#9679;</span>
+                        Adaptive Settings
+                        <span class="live-dot" id="adaptive-indicator">LIVE</span>
+                    </div>
+                    <div class="judge-field" style="margin-bottom: 1.5rem;">
+                        <label for="adaptive-persona" class="state-vec-label">User Persona</label>
+                        <select id="adaptive-persona" style="width: 100%; padding: 0.5rem; background: rgba(0,0,0,0.4); border: 1px solid var(--border); color: #fff; border-radius: 4px; font-family: 'Inter', sans-serif;">
+                            <option value="maya">Maya - Creative Explorer</option>
+                            <option value="arjun">Arjun - Tech Learner</option>
+                            <option value="zoe">Zoe - Trend Chaser</option>
+                            <option value="liam">Liam - Niche Deep Diver</option>
+                            <option value="nina">Nina - Balanced Discoverer</option>
+                            <option value="omar">Omar - Curious Generalist</option>
+                        </select>
+                    </div>
+                    <div style="text-align: center; margin-bottom: 1.2rem;">
+                        <img src="robot.png" alt="AI Discovery Agent" style="width: 100%; max-width: 240px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 6px 20px rgba(0,0,0,0.4); opacity: 0.92;">
+                    </div>
+                    <div class="state-vec-box">
+                        <span class="state-vec-label">Additional Meta</span>
+                        <div style="font-size: 0.8rem; margin-top: 0.5rem; color: var(--text-dim);">
+                            <div style="margin-bottom: 0.5rem;"><span>Reward Delta vs Baseline:</span> <strong id="adaptive-reward-delta">-</strong></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel center-col">
+                    <div class="glass-card prediction-card">
+                        <div class="card-header">
+                            <span class="step-pill" id="adaptive-step-indicator">STEP 0 / 15</span>
+                            <span id="adaptive-confidence" class="conf-badge">- CONF</span>
+                        </div>
+                        <!-- ADAPTIVE CARD FEED -->
+                        <div id="adaptive-card-feed" class="adaptive-card-feed">
+                            <div class="adaptive-feed-empty" id="adaptive-feed-empty" style="flex-direction: column; align-items: center; padding: 2rem 1rem;">
+                                <div class="adaptive-feed-empty-icon" style="color: #00e5ff; font-size: 2.5rem; margin-bottom: 0.5rem;">&#10024;</div>
+                                <p style="font-weight: 600; font-size: 1.1rem; color: #fff; margin-bottom: 0.4rem;">Up Next: AI-Curated Discovery Queue</p>
+                                <p style="font-size: 0.85rem; color: var(--text-dim); max-width: 90%; margin: 0 auto 1.2rem;">Based on your activity, the RL agent has flagged these domains to safely expand your interests without causing fatigue:</p>
+                                
+                                <div style="display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; margin-bottom: 0.5rem;">
+                                    <span style="background: rgba(0, 255, 136, 0.1); border: 1px solid rgba(0, 255, 136, 0.3); color: #00ff88; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600;">System Architecture</span>
+                                    <span style="background: rgba(192, 132, 252, 0.1); border: 1px solid rgba(192, 132, 252, 0.3); color: #c084fc; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600;">Advanced AI Dev</span>
+                                    <span style="background: rgba(0, 229, 255, 0.1); border: 1px solid rgba(0, 229, 255, 0.3); color: #00e5ff; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600;">Cloud Security</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="state-vec-box">
+                            <span class="state-vec-label">Preserved Memory</span>
+                            <p id="adaptive-memory-text" style="font-size: 0.8rem; color: var(--text-dim); margin-top: 0.3rem;">Your memory is preserved and displaying some of the domains and the things we recently saw.</p>
+                            <div id="adaptive-memory-tags" style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.6rem;">
+                            </div>
+                        </div>
+
+                        <p id="adaptive-status" class="judge-pack-status" style="margin-top: 1rem; text-align: center; font-size: 0.75rem; color: var(--text-dim);">Ready. Local model mode active (no API calls).</p>
+                    </div>
+
+                    <div class="glass-card adaptive-compare-card">
+                        <div class="adaptive-compare-header">
+                            <span class="adaptive-compare-title">Preserved Memory History</span>
+                            <span class="adaptive-compare-badge">10 entries</span>
+                        </div>
+                        <div class="adaptive-table-wrap">
+                            <table class="adaptive-table" style="font-size: 0.75rem;">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Timestamp</th>
+                                        <th>Domain</th>
+                                        <th>Reel Topic</th>
+                                        <th>Duration (sec)</th>
+                                        <th>Watch %</th>
+                                        <th>Action</th>
+                                        <th>Difficulty</th>
+                                        <th>Interest Score</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td>1</td><td>2026-04-15 10:12</td><td>Machine Learning</td><td>Neural Networks Basics</td><td>45</td><td>100%</td><td><span style="color:#00ff88; font-weight:600;">Liked</span></td><td>Medium</td><td><strong style="color:var(--primary);">9</strong></td></tr>
+                                    <tr><td>2</td><td>2026-04-15 11:05</td><td>Web Development</td><td>React Hooks Explained</td><td>30</td><td>85%</td><td><span style="color:#00e5ff; font-weight:600;">Saved</span></td><td>Easy</td><td><strong style="color:var(--primary);">8</strong></td></tr>
+                                    <tr><td>3</td><td>2026-04-15 12:20</td><td>Data Science</td><td>Data Cleaning Tips</td><td>50</td><td>60%</td><td><span style="color:#ff3e3e; font-weight:600;">Skipped</span></td><td>Medium</td><td><strong style="color:var(--text-dim);">5</strong></td></tr>
+                                    <tr><td>4</td><td>2026-04-15 14:10</td><td>Cyber Security</td><td>SQL Injection Demo</td><td>40</td><td>100%</td><td><span style="color:#c084fc; font-weight:600;">Shared</span></td><td>Hard</td><td><strong style="color:var(--primary);">9</strong></td></tr>
+                                    <tr><td>5</td><td>2026-04-15 16:45</td><td>Machine Learning</td><td>Reinforcement Learning Intro</td><td>60</td><td>95%</td><td><span style="color:#00ff88; font-weight:600;">Liked</span></td><td>Hard</td><td><strong style="color:var(--primary);">10</strong></td></tr>
+                                    <tr><td>6</td><td>2026-04-15 18:00</td><td>Finance</td><td>Stock Market Basics</td><td>35</td><td>70%</td><td><span style="color:#00ff88; font-weight:600;">Liked</span></td><td>Easy</td><td><strong style="color:var(--primary);">7</strong></td></tr>
+                                    <tr><td>7</td><td>2026-04-15 19:30</td><td>Web Development</td><td>CSS Flexbox in 1 min</td><td>25</td><td>100%</td><td><span style="color:#00e5ff; font-weight:600;">Saved</span></td><td>Easy</td><td><strong style="color:var(--primary);">8</strong></td></tr>
+                                    <tr><td>8</td><td>2026-04-15 20:10</td><td>AI Tools</td><td>Using Chatbots Efficiently</td><td>55</td><td>90%</td><td><span style="color:#00ff88; font-weight:600;">Liked</span></td><td>Medium</td><td><strong style="color:var(--primary);">9</strong></td></tr>
+                                    <tr><td>9</td><td>2026-04-15 21:00</td><td>Data Science</td><td>Pandas Tricks</td><td>40</td><td>50%</td><td><span style="color:#ff3e3e; font-weight:600;">Skipped</span></td><td>Medium</td><td><strong style="color:var(--text-dim);">4</strong></td></tr>
+                                    <tr><td>10</td><td>2026-04-15 22:15</td><td>Cyber Security</td><td>Password Cracking Explained</td><td>45</td><td>80%</td><td><span style="color:#00e5ff; font-weight:600;">Saved</span></td><td>Hard</td><td><strong style="color:var(--primary);">8</strong></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel glass-card">
+                    <div class="panel-title">
+                        <span class="panel-icon reward-icon" style="color: #00e5ff;">&#9650;</span>
+                        Reward Architecture
+                    </div>
+                    <div class="reward-display">
+                        <span class="reward-num pos">+0.814</span>
+                        <span class="reward-label">Optimized Step Reward</span>
+                    </div>
+                    
+                    <div class="reward-bar-section" style="margin-top: 1.5rem;">
+                        <h4 class="sub-label" style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.4rem; margin-bottom: 0.8rem;">Calculation Breakdown</h4>
+                        <div style="font-size: 0.8rem; color: #dbe4f3; display: flex; flex-direction: column; gap: 0.4rem; font-family: 'JetBrains Mono', monospace; background: rgba(0,0,0,0.2); padding: 0.8rem; border-radius: 8px;">
+                            <div style="display:flex; justify-content:space-between;"><span>Relevance:</span> <span style="color:#00e5ff;">+0.420</span></div>
+                            <div style="display:flex; justify-content:space-between;"><span>Novelty (Exploration):</span> <span style="color:#c084fc;">+0.180</span></div>
+                            <div style="display:flex; justify-content:space-between;"><span>Diversity Penalty:</span> <span style="color:#ff3e3e;">-0.030</span></div>
+                            <div style="display:flex; justify-content:space-between;"><span>Fatigue Penalty:</span> <span style="color:#ff3e3e;">-0.080</span></div>
+                            <div style="display:flex; justify-content:space-between;"><span>Bubble Risk Reduction:</span> <span style="color:#00ff88;">+0.324</span></div>
+                        </div>
+                    </div>
+
+                    <div class="reward-bar-section" style="margin-top: 1.5rem;">
+                        <h4 class="sub-label" style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.4rem; margin-bottom: 0.8rem;">Alternative Interventions</h4>
+                        <ul style="font-size: 0.8rem; color: var(--text-dim); padding-left: 1.2rem; display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0;">
+                            <li><strong style="color:#818cf8;">Deepen Interest:</strong> Tech Startup Pitch (Scores zero for novelty)</li>
+                            <li><strong style="color:#fb923c;">Break Pattern:</strong> Cooking Tutorial (Too far off-policy)</li>
+                        </ul>
+                    </div>
+
+                    <div class="log-section" style="margin-top: 1.5rem;">
+                        <h4 class="sub-label" style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.4rem; margin-bottom: 0.8rem;">System Pipeline Logs</h4>
+                        <div class="log-container" style="max-height: 180px;">
+                            <div class="graph-log-row"><span>SYS</span><strong>User detected locked in repeating creator loop.</strong></div>
+                            <div class="graph-log-row"><span>RL</span><strong>Exploration parameter implicitly increased.</strong></div>
+                            <div class="graph-log-row"><span>ACT</span><strong>Diversify Feed action dispatched.</strong></div>
+                            <div class="graph-log-row"><span>RWD</span><strong>High reward received for varied domain engagement.</strong></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="architecture-section" class="tab-pane">
+            <div class="section-header">
+                <h2>How the Simulation Works</h2>
+                <p>State -> Action -> Reward -> Policy update, tuned for intentional discovery and reduced algorithm fatigue.</p>
+            </div>
+            <div class="arch-grid">
+                <div class="glass-card arch-card">
+                    <h3>State Signals (10-D): Exact RL Input Vector</h3>
+                    <ul class="feat-list">
+                        <li>[0] Novelty Score</li>
+                        <li>[1] Repeat Exposure</li>
+                        <li>[2] Interest Momentum</li>
+                        <li>[3] Creator Diversity</li>
+                        <li>[4] Session Fatigue</li>
+                        <li>[5] Topic Drift</li>
+                        <li>[6] Engagement Depth</li>
+                        <li>[7] Serendipity Potential</li>
+                        <li>[8] Bubble Risk</li>
+                        <li>[9] Cognitive Load</li>
+                        <li>Input format: 10-feature float vector (used every step by the RL policy)</li>
+                    </ul>
+                </div>
+                <div class="glass-card arch-card">
+                    <h3>Policy Loop + Action IDs</h3>
+                    <ul class="feat-list">
+                        <li>Action 0 -> Diversify Feed</li>
+                        <li>Action 1 -> Stay Balanced</li>
+                        <li>Action 2 -> Deepen Interest</li>
+                        <li>Exploration level shifts action preference using key signals: state[0], state[6], state[8]</li>
+                        <li>Baseline comparator score: 0.4 * state[1] + 0.4 * state[2] + 0.2 * state[0]</li>
+                    </ul>
+                </div>
+                <div class="glass-card arch-card">
+                    <h3>Reward Philosophy: Exact Numeric Rules</h3>
+                    <ul class="feat-list">
+                        <li>If prediction == 1 and actual == 1 -> reward = +0.5</li>
+                        <li>If prediction matches actual direction -> +1.0</li>
+                        <li>Early intervention bonus (is_early) -> +0.5</li>
+                        <li>High confidence bonus (confidence &gt; 0.8) -> +0.5</li>
+                        <li>Opposite-direction miss -> -1.0</li>
+                        <li>Near miss (balanced vs directional) -> -0.2</li>
+                    </ul>
+                </div>
+                <div class="glass-card arch-card">
+                    <h3>Live Metrics Exposed During Simulation</h3>
+                    <ul class="feat-list">
+                        <li>prediction, prediction_label, confidence</li>
+                        <li>actual_trend, actual_label</li>
+                        <li>reward, total reward, accuracy, streak</li>
+                        <li>reward_breakdown.decision_match (0/1)</li>
+                        <li>reward_breakdown.early_diversity_bonus (0/1)</li>
+                        <li>reward_breakdown.high_confidence_bonus (0/1)</li>
+                        <li>reward_breakdown.mismatch_penalty (0/1)</li>
+                        <li>reward_breakdown.total (numeric)</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>Built for AI Evolution Hackathon 2026: Algorithm Fatigue in Content Discovery</p>
+    </footer>
+
+    <div id="toast-container" class="toast-container"></div>
+    <script src="script.js"></script>
+</body>
+</html>
+
+
